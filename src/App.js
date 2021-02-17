@@ -9,6 +9,8 @@ import SignUp from './components/SignUp/SignUp'
 import SignIn from './components/SignIn/SignIn'
 import SignOut from './components/SignOut/SignOut'
 import ChangePassword from './components/ChangePassword/ChangePassword'
+import FitCreate from './components/Fits/FitCreate'
+import FitIndex from './components/Fits/FitIndex'
 
 class App extends Component {
   constructor (props) {
@@ -64,6 +66,12 @@ class App extends Component {
           )} />
           <AuthenticatedRoute user={user} path='/change-password' render={() => (
             <ChangePassword msgAlert={this.msgAlert} user={user} />
+          )} />
+          <AuthenticatedRoute user={user} path='/create-fit' render={() => (
+            <FitCreate msgAlert={this.msgAlert} user={user} />
+          )} />
+          <Route user={user} exact path='/fits' render={() => (
+            <FitIndex msgAlert={this.msgAlert} user={user} />
           )} />
         </main>
       </Fragment>

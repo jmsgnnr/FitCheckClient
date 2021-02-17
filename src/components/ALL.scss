@@ -1,0 +1,42 @@
+@import '~bootstrap/scss/bootstrap';
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500&display=swap');
+
+
+.navbar{
+    background: hotpink;
+    font-family: 'Orbitron', sans-serif;
+    background: repeating-conic-gradient(white 0% 25%, black 0% 50%)
+    50% / 50px 40px;
+    
+}
+.navbar-brand, .nav-link{
+    color: white;
+    background-color: rgb(255, 17, 204);
+    border: 1px solid black;
+    border-radius: 1px solid;
+}
+.signUpForm,.signInRow{
+    display: flex;
+    flex-direction:column;
+    font-family: 'Orbitron', sans-serif;
+    justify-content: center;
+    text-shadow: -3px -2px 3px rgb(234, 0, 255);
+    -webkit-text-stroke: .81px rgb(0, 0, 0);
+    background-color: rgb(0, 0, 0);
+    color: rgb(255, 255, 255);
+}
+.row{
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    text-align: center;
+    text-emphasis-color: white;
+    border: 1px solid black;
+    text-shadow: 1px 1px white;
+    font-family: 'Orbitron', sans-serif;
+    max-width: fit-content;
+
+}
+#root{
+    background-color: rgb(0, 0, 0);
+}
