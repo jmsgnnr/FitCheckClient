@@ -4,7 +4,6 @@ import FitsForm from '../Fits/FitsForm'
 
 const Landing = ({ user }) => (
   <div className="contents">
-<Landing />
     <FitsForm />
   </div>
 )
