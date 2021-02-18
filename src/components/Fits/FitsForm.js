@@ -23,7 +23,7 @@ const MyFitsForm = ({ fit, handleSubmit, handleChange }) => (
     <label>Site</label>
     <input
       required
-      placeholder='Enter  of fit'
+      placeholder='Enter Site Found'
       // this name should line up with the state we want to change
       name='site'
       defaultValue={fit.site}

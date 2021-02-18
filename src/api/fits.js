@@ -3,14 +3,14 @@ import axios from 'axios'
 
 export const fitIndex = user => {
   return axios({
-    url: apiUrl + '/my-fits',
+    url: apiUrl + '/fits',
     method: 'GET'
   })
 }
 
 export const fitCreate = (fit, user) => {
   return axios({
-    url: apiUrl + '/my-fits',
+    url: apiUrl + '/fits',
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${user.token}`
@@ -21,7 +21,7 @@ export const fitCreate = (fit, user) => {
 
 export const fitShow = (id, user) => {
   return axios({
-    url: apiUrl + '/my-fits/' + id,
+    url: apiUrl + '/fits/' + id,
     method: 'GET'
   })
 }

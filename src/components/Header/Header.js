@@ -7,7 +7,7 @@ const authenticatedOptions = (
   <Fragment>
     <Nav.Link href="#change-password">CHANGE PASS</Nav.Link>
     <Nav.Link href="#sign-out">$IGN OUT</Nav.Link>
-    <Nav.Link href="fit-create">CRE@TE FIT</Nav.Link>
+    <Nav.Link href="#create-fit">CRE@TE FIT</Nav.Link>
     <Nav.Link href="#my-fits">MY FITS</Nav.Link>
   </Fragment>
 )
