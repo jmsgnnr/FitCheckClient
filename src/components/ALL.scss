@@ -7,6 +7,8 @@
     font-family: 'Orbitron', sans-serif;
     background: repeating-conic-gradient(white 0% 25%, black 0% 50%)
     50% / 50px 40px;
+    border: 2px solid hotpink;
+    border-radius: 2px;
     
 }
 .navbar-brand, .nav-link{
@@ -15,7 +17,7 @@
     border: 1px solid black;
     border-radius: 1px solid;
 }
-.signUpForm,.signInRow{
+.signUpForm, .signInRow, .createFitForm{
     display: flex;
     flex-direction:column;
     font-family: 'Orbitron', sans-serif;
@@ -24,6 +26,8 @@
     -webkit-text-stroke: .81px rgb(0, 0, 0);
     background-color: rgb(0, 0, 0);
     color: rgb(255, 255, 255);
+    max-width: fit-content;
+    border: 1px solid hotpink;
 }
 .row{
     display: flex;
@@ -34,9 +38,17 @@
     border: 1px solid black;
     text-shadow: 1px 1px white;
     font-family: 'Orbitron', sans-serif;
-    max-width: fit-content;
+    min-width: 50vh;
+    min-height: max-content;
+    border: 1px solid hotpink;
+    border-radius: 10px;
 
 }
-#root{
+#root, .row{
+    display: flex;
+    flex-direction: column;
     background-color: rgb(0, 0, 0);
+    min-height: 100vh;
+    justify-content: center;
+   
 }

@@ -1,9 +1,6 @@
 import React, { Component } from 'react'
-// import Spinner from 'react-bootstrap/Spinner'
-// import withRouter so we have access to the match route prop
 import { withRouter, Redirect, Link } from 'react-router-dom'
 import { fitShow } from '../../api/fits'
-// import PostCreate from './../Posts/PostCreate'
 import apiUrl from '../../apiConfig'
 import axios from 'axios'
 
@@ -70,18 +67,17 @@ class FitShow extends Component {
       // A Spinner is just a nice loading message we get from react bootstrap
       return (
         <div>
-          <h2>There is no fits! Go make one.</h2>
+          <h2>There are no fits! Go make one.</h2>
         </div>
       )
     }
 
     return (
-      <div className="showfitDiv">
+      <div className="showFitDiv">
         <h3 className='fitEdit'>{fit.name}</h3>
         <h3 className='openType'>{fit.brand}</h3>
         <h3 className='openType'>{fit.site}</h3>
-        <button onClick={this.deleteFit} className='submitBtn'>Delete fit</button>
-        <button className='submitBtn'><Link to={`/update-fit/${fit._id}`}>Update fit</Link></button>
+        <button onClick={this.deleteFit} className='submitBtn'>Delete fit</button><button className='submitBtn'><Link to={`/update-fit/${fit._id}`}>Update fit</Link></button>
         <FitShow msgAlert={msgAlert} user={user}/>
         {deleted ? <Redirect to="/fits"/> : fitJsx}
       </div>

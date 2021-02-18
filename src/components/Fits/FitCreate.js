@@ -44,16 +44,10 @@ class FitCreate extends Component {
 
   // when an input changes, update the state that corresponds with the input's name
   handleChange = event => {
-    // in react, an event is actually a SyntheticEvent
-    // to ensure the properties are not set to null after handleChange is finished
-    // we must call event.persist
     event.persist()
     this.setState(state => {
       // return our state changge
       return {
-        // set the fit state, to what it used to be (...state.fit)
-        // but replace the property with `name` to its current `value`
-        // ex. name could be `name` or `director`
         fit: { ...state.fit, [event.target.name]: event.target.value }
       }
     })
