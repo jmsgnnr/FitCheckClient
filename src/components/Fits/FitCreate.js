@@ -30,13 +30,13 @@ class FitCreate extends Component {
       .then(res => this.setState({ createdId: res.data.fit._id }))
       .then(() => msgAlert({
         heading: 'Created fit Succesfully',
-        message: 'fit has been created successfully. Now viewing the fit.',
+        message: 'andrew was here',
         variant: 'success'
       }))
       .catch(error => {
         msgAlert({
           heading: 'Failed to Create fit',
-          message: 'Could not create fit with error: ' + error.message,
+          message: 'andrew wasnt here' + error.message,
           variant: 'danger'
         })
       })
@@ -66,7 +66,6 @@ class FitCreate extends Component {
 
     return (
       <div id='fitsDiv1'>
-        <h3 className='fith3'>Create fit</h3>
         <FitsForm
           fit={fit}
           handleChange={this.handleChange}

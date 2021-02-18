@@ -63,14 +63,13 @@ class FitShow extends Component {
       return <Redirect to="/fits"/>
     }
     // if we don't have a fit yet
-    if (!fit) {
-      // A Spinner is just a nice loading message we get from react bootstrap
-      return (
-        <div>
-          <h2>There are no fits! Go make one.</h2>
-        </div>
-      )
-    }
+    // if (!fit) {
+    //   return (
+    //     <div>
+    //       <h2>There are no fits! Go make one.</h2>
+    //     </div>
+    //   )
+    // }
 
     return (
       <div className="showFitDiv">

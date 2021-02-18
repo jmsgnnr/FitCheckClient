@@ -2,6 +2,7 @@ import React from 'react'
 
 const MyFitsForm = ({ fit, handleSubmit, handleChange }) => (
   <form className="createFitForm" onSubmit={handleSubmit}>
+    <h3>CREATE A FIT</h3>
     <label>Name</label>
     <input
       required

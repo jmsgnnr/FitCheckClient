@@ -3,12 +3,13 @@
 
 
 .navbar{
-    background: hotpink;
+    background: rgb(255, 17, 204);
     font-family: 'Orbitron', sans-serif;
     background: repeating-conic-gradient(white 0% 25%, black 0% 50%)
-    50% / 50px 40px;
-    border: 2px solid hotpink;
+    50% / 10px 10px;
+    border: 2px solid rgb(255, 17, 204);
     border-radius: 2px;
+    max-height: fit-content;
     
 }
 .navbar-brand, .nav-link{
@@ -17,38 +18,38 @@
     border: 1px solid black;
     border-radius: 1px solid;
 }
-.signUpForm, .signInRow, .createFitForm{
+.signUpForm, .signInRow, .createFitForm ,.changePassForm{
     display: flex;
     flex-direction:column;
+    margin-top: 20vh;
+    min-height: 50vh;
     font-family: 'Orbitron', sans-serif;
     justify-content: center;
-    text-shadow: -3px -2px 3px rgb(234, 0, 255);
+    text-shadow: -3px -2px 3px rgb(255, 17, 204);
     -webkit-text-stroke: .81px rgb(0, 0, 0);
     background-color: rgb(0, 0, 0);
     color: rgb(255, 255, 255);
     max-width: fit-content;
-    border: 1px solid hotpink;
+    border: 2px ridge grey;
+    border-radius: 10px;
+    box-shadow: inset 0px 10px 100px 10px rgba(244, 166, 247, 0.863);
+    background: url(https://cdn141.picsart.com/305184574199201.jpg?type=webp&to=crop&r=256);
 }
 .row{
     display: flex;
-    flex-direction: column;
+    // flex-direction: column;
     justify-content: center;
     text-align: center;
     text-emphasis-color: white;
-    border: 1px solid black;
     text-shadow: 1px 1px white;
     font-family: 'Orbitron', sans-serif;
     min-width: 50vh;
-    min-height: max-content;
-    border: 1px solid hotpink;
+    min-height: fit-content;
+    border: 1px solid rgb(5, 5, 3);
     border-radius: 10px;
 
 }
-#root, .row{
-    display: flex;
-    flex-direction: column;
-    background-color: rgb(0, 0, 0);
-    min-height: 100vh;
-    justify-content: center;
-   
+#root,{
+  background: black;
+  min-height: 100vh;
 }

@@ -11,8 +11,8 @@ import SignOut from './components/SignOut/SignOut'
 import ChangePassword from './components/ChangePassword/ChangePassword'
 import FitCreate from './components/Fits/FitCreate'
 import FitIndex from './components/Fits/FitIndex'
-import FitShow from './components/Fits/FitShow'
-import UpdateFit from './components/Fits/FitEdit'
+// import FitShow from './components/Fits/FitShow'
+// import UpdateFit from './components/Fits/FitEdit'
 
 class App extends Component {
   constructor (props) {
@@ -72,18 +72,18 @@ class App extends Component {
           <AuthenticatedRoute user={user} path='/create-fit' render={() => (
             <FitCreate msgAlert={this.msgAlert} user={user} />
           )} />
-          <Route user={user} exact path='/fits' render={() => (
+          <Route user={user} path='/fits' render={() => (
             <FitIndex msgAlert={this.msgAlert} user={user} />
           )} />
-          <AuthenticatedRoute user={user} path='/fits/:id' render={() => (
+          {/* <AuthenticatedRoute user={user} path='/fits/:id' render={() => (
             <FitShow msgAlert={this.msgAlert} user={user} />
-          )} />
+          )} /> */}
           <AuthenticatedRoute user={user} path='/fits/:id' render={() => (
             <FitCreate msgAlert={this.msgAlert} user={user} />
           )} />
-          <AuthenticatedRoute user={user} path='/update-fit/:id' render={() => (
+          {/* <AuthenticatedRoute user={user} path='/update-fit/:id' render={() => (
             <UpdateFit msgAlert={this.msgAlert} user={user} />
-          )} />
+          )} /> */}
         </main>
       </Fragment>
     )
