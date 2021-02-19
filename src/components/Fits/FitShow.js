@@ -18,7 +18,7 @@ class FitShow extends Component {
   componentDidMount () {
     const { user, match, msgAlert } = this.props
     // make a request for a single fit
-    fitShow(match.params._id, user)
+    fitShow(match.params.id, user)
     // set the fit state to the fit we got back in the resopnse's data
       .then(res => this.setState({ fit: res.data.fit }))
       .then(() => msgAlert({
@@ -54,7 +54,7 @@ class FitShow extends Component {
 
   render () {
     let fitJsx
-    const { msgAlert, user } = this.props
+    // const { msgAlert, user } = this.props
     const { fit, deleted } = this.state
 
     if (deleted) {
@@ -74,8 +74,8 @@ class FitShow extends Component {
         <h3 className='fitEdit'>{fit.name}</h3>
         <h3 className='openType'>{fit.brand}</h3>
         <h3 className='openType'>{fit.site}</h3>
-        <button onClick={this.deleteFit} className='submitBtn'>Delete fit</button><button className='submitBtn'><Link to={`/fits/${fit._id}`}>Update fit</Link></button>
-        <FitShow msgAlert={msgAlert} user={user}/>
+        <button onClick={this.deleteFit} className='submitBtn'>Delete fit</button><button className='submitBtn'><Link to={`/fits/${fit.id}`}>Update fit</Link></button>
+        {/* <FitShow msgAlert={msgAlert} user={user}/> */}
         <div>
           <h3>HELLO?</h3>
         </div>

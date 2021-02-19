@@ -11,7 +11,7 @@ import ChangePassword from './components/ChangePassword/ChangePassword'
 import FitCreate from './components/Fits/FitCreate'
 import FitIndex from './components/Fits/FitIndex'
 import FitShow from './components/Fits/FitShow'
-// import UpdateFit from './components/Fits/FitEdit'
+import UpdateFit from './components/Fits/FitEdit'
 
 class App extends Component {
   constructor (props) {
@@ -74,12 +74,12 @@ class App extends Component {
           <AuthenticatedRoute user={user} path='/fits' render={() => (
             <FitIndex msgAlert={this.msgAlert} user={user} />
           )} />
-          <AuthenticatedRoute user={user} exact path='/fits/:id' render={() => (
+          <AuthenticatedRoute user={user} exact path='/fits/:id' render={({ props }) => (
             <FitShow msgAlert={this.msgAlert} user={user} />
           )} />
-          {/* <AuthenticatedRoute user={user} path='/update-fit/:id' render={() => (
+          <AuthenticatedRoute user={user} path='/update-fit/:id' render={() => (
             <UpdateFit msgAlert={this.msgAlert} user={user} />
-          )} /> */}
+          )} />
         </main>
       </Fragment>
     )

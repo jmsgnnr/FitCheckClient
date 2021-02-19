@@ -27,7 +27,7 @@ class FitCreate extends Component {
     // create an fit, pass it the fit data and the user for its token
     fitCreate(fit, user)
       // set the createdId to the id of the fit we just created
-      .then(res => this.setState({ createdId: res.data.fit._id }))
+      .then(res => this.setState({ createdId: res.data.fit.id }))
       .then(() => msgAlert({
         heading: 'Created fit Succesfully',
         message: 'andrew was here',
