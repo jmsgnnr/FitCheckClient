@@ -16,8 +16,6 @@ class FitIndex extends Component {
   // after we render the fitIndex component for the first time
   componentDidMount () {
     const { msgAlert, user } = this.props
-    // make a request to get all of our fits
-    // console.log('han is here line 20', this.props)
     fitIndex(user)
       // set the fits state, to the fits we got back in the response's data
       .then(res => {
@@ -52,17 +50,17 @@ class FitIndex extends Component {
       )
     }
 
-    const fitJsx = fits.map(fit => (
-      <Link to={`/fits/${fit._id}`} key={fit._id}>
-        <li>
+    const fitJsx = this.state.fits.map(fit => (
+      <li key={fit._id}>
+        <Link to={`/fits/${fit._id}`} name={fit.name}>
           {fit.name}
-        </li>
-      </Link>
+        </Link>
+      </li>
     ))
 
     return (
       <div className='fitDiv1'>
-        <h3 className='createh3'>FITS</h3>
+        <h3 className='createh3'>MY FITS!!!</h3>
         <ul>
           {fitJsx}
         </ul>

@@ -1,7 +1,6 @@
 import React, { Component, Fragment } from 'react'
 import { Route } from 'react-router-dom'
 import { v4 as uuid } from 'uuid'
-
 import AuthenticatedRoute from './components/AuthenticatedRoute/AuthenticatedRoute'
 import AutoDismissAlert from './components/AutoDismissAlert/AutoDismissAlert'
 import Header from './components/Header/Header'
@@ -72,10 +71,10 @@ class App extends Component {
           <AuthenticatedRoute user={user} path='/create-fit' render={() => (
             <FitCreate msgAlert={this.msgAlert} user={user} />
           )} />
-          <Route user={user} path='/fits' render={() => (
+          <AuthenticatedRoute user={user} path='/fits' render={() => (
             <FitIndex msgAlert={this.msgAlert} user={user} />
           )} />
-          <AuthenticatedRoute user={user} path='/fits/:id' render={() => (
+          <AuthenticatedRoute user={user} exact path='/fits/:id' render={() => (
             <FitShow msgAlert={this.msgAlert} user={user} />
           )} />
           {/* <AuthenticatedRoute user={user} path='/update-fit/:id' render={() => (

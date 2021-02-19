@@ -17,10 +17,8 @@ class FitShow extends Component {
 
   componentDidMount () {
     const { user, match, msgAlert } = this.props
-    console.log('is this working', user)
-    console.log(match)
     // make a request for a single fit
-    fitShow(match.params.id, user)
+    fitShow(match.params._id, user)
     // set the fit state to the fit we got back in the resopnse's data
       .then(res => this.setState({ fit: res.data.fit }))
       .then(() => msgAlert({
