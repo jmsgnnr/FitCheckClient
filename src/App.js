@@ -72,7 +72,7 @@ class App extends Component {
           <AuthenticatedRoute user={user} path='/create-fit' render={() => (
             <FitCreate msgAlert={this.msgAlert} user={user} />
           )} />
-          <Route user={user} path='/fits' render={() => (
+          <Route user={user} path='/fits/:id' render={() => (
             <FitIndex msgAlert={this.msgAlert} user={user} />
           )} />
           {/* <AuthenticatedRoute user={user} path='/fits/:id' render={() => (
