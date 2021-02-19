@@ -26,6 +26,9 @@ export const fitCreate = (fit, user) => {
 export const fitShow = (id, user) => {
   return axios({
     url: apiUrl + '/fits/' + id,
-    method: 'GET'
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${user.token}`
+    }
   })
 }

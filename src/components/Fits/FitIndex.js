@@ -16,12 +16,13 @@ class FitIndex extends Component {
   // after we render the fitIndex component for the first time
   componentDidMount () {
     const { msgAlert, user } = this.props
-    console.log('this is user', user)
     // make a request to get all of our fits
+    // console.log('han is here line 20', this.props)
     fitIndex(user)
       // set the fits state, to the fits we got back in the response's data
       .then(res => {
         this.setState({ fits: res.data.fits })
+        // console.log('james made it here', this.state.fits)
       })
       // dummy data until we create actual fits
       // .then(res => this.setState({ fits: [{ _id: 1, name: 'jaws' }, { _id: 2, name: 'The Phantom Menace' }] }))
@@ -42,12 +43,11 @@ class FitIndex extends Component {
   render () {
     // destructure our fits state
     const { fits } = this.state
-    console.log('you made it here james and andrew', fits.length)
     // if we haven't fetched any fits yet from the API
     if (fits.length === 0) {
       return (
         <div>
-          <h2>This is where youre landing</h2>
+          <h2>THIS IS THE CORRECT FITS PAGE</h2>
         </div>
       )
     }

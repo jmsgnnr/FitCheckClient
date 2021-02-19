@@ -61,7 +61,7 @@ class FitCreate extends Component {
     if (createdId) {
       console.log(createdId)
       // redirect to the fits show page
-      return <Redirect to={`/fits/${createdId}`} />
+      return <Redirect to={'/fits'} />
     }
 
     return (

@@ -17,7 +17,7 @@ class FitShow extends Component {
 
   componentDidMount () {
     const { user, match, msgAlert } = this.props
-    console.log(user)
+    console.log('is this working', user)
     console.log(match)
     // make a request for a single fit
     fitShow(match.params.id, user)
@@ -63,21 +63,24 @@ class FitShow extends Component {
       return <Redirect to="/fits"/>
     }
     // if we don't have a fit yet
-    // if (!fit) {
-    //   return (
-    //     <div>
-    //       <h2>There are no fits! Go make one.</h2>
-    //     </div>
-    //   )
-    // }
+    if (!fit) {
+      return (
+        <div>
+          <h2>There are no fits! Go make one.</h2>
+        </div>
+      )
+    }
 
     return (
       <div className="showFitDiv">
         <h3 className='fitEdit'>{fit.name}</h3>
         <h3 className='openType'>{fit.brand}</h3>
         <h3 className='openType'>{fit.site}</h3>
-        <button onClick={this.deleteFit} className='submitBtn'>Delete fit</button><button className='submitBtn'><Link to={`/update-fit/${fit._id}`}>Update fit</Link></button>
+        <button onClick={this.deleteFit} className='submitBtn'>Delete fit</button><button className='submitBtn'><Link to={`/fits/${fit._id}`}>Update fit</Link></button>
         <FitShow msgAlert={msgAlert} user={user}/>
+        <div>
+          <h3>HELLO?</h3>
+        </div>
         {deleted ? <Redirect to="/fits"/> : fitJsx}
       </div>
     )
