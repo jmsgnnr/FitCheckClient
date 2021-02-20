@@ -1,5 +1,6 @@
 @import '~bootstrap/scss/bootstrap';
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Oi&display=swap');
 
 
 .navbar{
@@ -29,11 +30,12 @@
     -webkit-text-stroke: .81px rgb(0, 0, 0);
     background-color: rgb(0, 0, 0);
     color: rgb(255, 255, 255);
-    max-width: fit-content;
+    // max-width: fit-content;
     border: 3px solid rgb(12, 7, 7);
     border-radius: 3px;
     box-shadow: inset 0px 10px 100px 10px rgba(244, 166, 247, 0.863), 0px 0px 10px 5px rgb(31, 28, 30);
     background: url(https://cdn141.picsart.com/305184574199201.jpg?type=webp&to=crop&r=256);
+    min-width: 250px;
 }
 .row{
     display: flex;
@@ -46,31 +48,43 @@
 
 }
 #root {
+    display: flex ;
+    flex-direction: column;
   background : url(https://i1.wp.com/tdsblog.com/wp-content/uploads/2017/05/8c9bd058661aa414920ff0fe11251bd6.jpg?ssl=1)no-repeat center center;
   background-size: cover;
   min-height : 100vh;
   box-shadow : inset 10px 100px 900px 8px #000000;
 background-blend-mode: lighten;
-justify-content: center;
+// justify-content: center;
 }
 .showFitDiv {
     text-align: center;
-    min-width: 200px;
-}
-.fitEdit{
-    box-shadow: inset 10px 0px 20px 3px rgb(0, 0, 0);
+    
 }
 .fitDiv1, .updatePage{
     display: flex;
-    flex-direction: row;
+    flex-direction: column;
 }
 li{
-    border: 1px solid rgb(218, 206, 206);
-    box-shadow: 0px 0px 10px 5px rgb(31, 28, 30);
+    border: .5px solid rgb(46, 37, 37);
+    box-shadow: 0px 0px 16px 0px rgb(15, 10, 14);
     background: url(https://cdn141.picsart.com/305184574199201.jpg?type=webp&to=crop&r=256);
-
-
+    text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
+    color: rgb(20, 16, 17);
+    font-size: 20px;
+    font-family: 'Oi', cursive;
 }
 .container{
+    display: flex;
     justify-content: center;
+}
+.testingPhoto{
+    max-height: 500px;
+    max-width: 500px;
+}
+img{
+    max-width: 300px;
+    max-height: 300px;
+    box-shadow: 0px 0px 10px 2px black;
+    margin: 2px auto;
 }

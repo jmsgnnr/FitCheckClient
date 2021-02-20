@@ -52,7 +52,7 @@ class FitIndex extends Component {
     const fitJsx = this.state.fits.map(fit => (
       <li key={fit.id}>
         <Link to={`/fits/${fit.id}`} name={fit.name}>
-          {fit.name}{fit.photo}
+          {fit.name}
         </Link>
       </li>
     ))

@@ -3,6 +3,7 @@ import { withRouter, Redirect, Link } from 'react-router-dom'
 import { fitShow } from '../../api/fits'
 import apiUrl from '../../apiConfig'
 import axios from 'axios'
+import Image from 'react-bootstrap/Image'
 
 class FitShow extends Component {
   constructor (props) {
@@ -74,6 +75,7 @@ class FitShow extends Component {
         <h3 className='fitEdit'>{fit.name}</h3>
         <h3 className='openType'>{fit.brand}</h3>
         <h3 className='openType'>{fit.site}</h3>
+        <Image src={fit.photo}/>
         <button onClick={this.deleteFit} className='submitBtn'>DELETE</button><button className='submitBtn'>
           <Link to={`/fits/${fit.id}/edit`}>UPDATE</Link></button>
       </div>

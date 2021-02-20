@@ -36,7 +36,7 @@ const MyFitsForm = ({ fit, handleSubmit, handleChange }) => (
       placeholder='ENTER IMAGE URL'
       // this name should line up with the state we want to change
       name='photo'
-      defaultValue={fit.photo}
+      value={fit.photo}
       onChange={handleChange}
     />
     <div className='submitFit'>
