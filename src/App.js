@@ -12,6 +12,7 @@ import FitCreate from './components/Fits/FitCreate'
 import FitIndex from './components/Fits/FitIndex'
 import FitShow from './components/Fits/FitShow'
 import UpdateFit from './components/Fits/FitEdit'
+// remember you define routes in the APP
 
 class App extends Component {
   constructor (props) {
@@ -71,13 +72,13 @@ class App extends Component {
           <AuthenticatedRoute user={user} path='/create-fit' render={() => (
             <FitCreate msgAlert={this.msgAlert} user={user} />
           )} />
-          <AuthenticatedRoute user={user} path='/fits' render={() => (
+          <AuthenticatedRoute user={user} exact path='/fits' render={() => (
             <FitIndex msgAlert={this.msgAlert} user={user} />
           )} />
           <AuthenticatedRoute user={user} exact path='/fits/:id' render={({ props }) => (
             <FitShow msgAlert={this.msgAlert} user={user} />
           )} />
-          <AuthenticatedRoute user={user} path='/update-fit/:id' render={() => (
+          <AuthenticatedRoute user={user} path='/fits/:id/edit' render={() => (
             <UpdateFit msgAlert={this.msgAlert} user={user} />
           )} />
         </main>

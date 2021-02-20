@@ -32,3 +32,13 @@ export const fitShow = (id, user) => {
     }
   })
 }
+export const fitUpdate = (id, fit, user) => {
+  return axios({
+    url: apiUrl + '/fits/' + id,
+    method: 'PATCH',
+    headers: {
+      'Authorization': `Bearer ${user.token}`
+    },
+    data: { fit: fit }
+  })
+}

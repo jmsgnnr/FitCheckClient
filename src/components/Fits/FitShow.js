@@ -53,7 +53,7 @@ class FitShow extends Component {
   }
 
   render () {
-    let fitJsx
+    // let fitJsx
     // const { msgAlert, user } = this.props
     const { fit, deleted } = this.state
 
@@ -64,7 +64,7 @@ class FitShow extends Component {
     if (!fit) {
       return (
         <div>
-          <h2>There are no fits! Go make one.</h2>
+          <h2>GO MAKE A FIT!</h2>
         </div>
       )
     }
@@ -74,12 +74,8 @@ class FitShow extends Component {
         <h3 className='fitEdit'>{fit.name}</h3>
         <h3 className='openType'>{fit.brand}</h3>
         <h3 className='openType'>{fit.site}</h3>
-        <button onClick={this.deleteFit} className='submitBtn'>Delete fit</button><button className='submitBtn'><Link to={`/fits/${fit.id}`}>Update fit</Link></button>
-        {/* <FitShow msgAlert={msgAlert} user={user}/> */}
-        <div>
-          <h3>HELLO?</h3>
-        </div>
-        {deleted ? <Redirect to="/fits"/> : fitJsx}
+        <button onClick={this.deleteFit} className='submitBtn'>DELETE</button><button className='submitBtn'>
+          <Link to={`/fits/${fit.id}/edit`}>UPDATE</Link></button>
       </div>
     )
   }

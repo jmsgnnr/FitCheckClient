@@ -20,12 +20,11 @@ class FitIndex extends Component {
       // set the fits state, to the fits we got back in the response's data
       .then(res => {
         this.setState({ fits: res.data.fits })
-        // console.log('james made it here', this.state.fits)
       })
       // dummy data until we create actual fits
       // .then(res => this.setState({ fits: [{ _id: 1, name: 'jaws' }, { _id: 2, name: 'The Phantom Menace' }] }))
       .then(() => msgAlert({
-        heading: 'ZANDER WAS HERE',
+        heading: 'YOU MADE IT TO FITS',
         message: 'All fits retrieved. Click on one to go to its page.',
         variant: 'success'
       }))
@@ -45,7 +44,7 @@ class FitIndex extends Component {
     if (fits.length === 0) {
       return (
         <div>
-          <h2>THIS IS THE CORRECT FITS PAGE</h2>
+          <h2>MY FIT$ PAGE</h2>
         </div>
       )
     }
@@ -53,7 +52,7 @@ class FitIndex extends Component {
     const fitJsx = this.state.fits.map(fit => (
       <li key={fit.id}>
         <Link to={`/fits/${fit.id}`} name={fit.name}>
-          {fit.name}
+          {fit.name}{fit.photo}
         </Link>
       </li>
     ))

@@ -1,8 +1,6 @@
 // imports
 import React, { Component, Fragment } from 'react'
 import { Redirect, withRouter } from 'react-router-dom'
-
-// import axios & apiConfig
 import axios from 'axios'
 import apiUrl from '../../apiConfig'
 
@@ -15,7 +13,8 @@ class UpdateFit extends Component {
       fit: {
         name: '',
         brand: '',
-        site: ''
+        site: '',
+        photo: ''
       },
       updated: false
     }
@@ -36,7 +35,7 @@ class UpdateFit extends Component {
     event.preventDefault()
     const { user, match } = this.props
     axios({
-      method: 'patch',
+      method: 'PATCH',
       url: `${apiUrl}/fits/${match.params.id}`,
       headers: {
         'Authorization': `Bearer ${user.token}`
@@ -67,19 +66,29 @@ class UpdateFit extends Component {
       // updatedField is the 3rd arg (comes after the state so it overrides the state values)
       // const newBook = Object.assign({}, this.state.book, updatedField)
 
-      return { ft: newFit }
+      return { fit: newFit }
     })
   }
 
   render () {
-    if (this.state.updated) {
-      return <Redirect to={`{/fits/${this.props.match.params.id}}`}/>
+    // let fitJsx
+    // const { msgAlert, user } = this.props
+    const { fit, updated } = this.state
+    if (!fit) {
+      return (
+        <div>
+          <h2>GO MAKE A FIT!</h2>
+        </div>
+      )
+    }
+    if (updated) {
+      return <Redirect to={'/fits'} />
     }
     return (
       <main className='updatePage'>
         <Fragment>
-          <h2 className='updateForm'>Update an fit</h2>
           <form onSubmit={this.handleSubmit} className='fitsDiv2'>
+            <h2 className='updateForm'>Update a fit</h2>
             <input
               name="name"
               type="text"
@@ -97,8 +106,16 @@ class UpdateFit extends Component {
             <input
               name="site"
               type="text"
-              placeholder="fit skill here"
+              placeholder="website"
               value={this.state.fit.site}
+              onChange={this.handleInputChange}
+            />
+            <label>PHOTO</label>
+            <input
+              placeholder='ENTER IMAGE URL'
+              type='text'
+              name='photo'
+              value={this.state.fit.photo}
               onChange={this.handleInputChange}
             />
             <button type="submit" className='submitBtn'>Submit</button>

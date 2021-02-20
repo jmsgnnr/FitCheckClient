@@ -12,7 +12,8 @@ class FitCreate extends Component {
       fit: {
         name: '',
         brand: '',
-        site: ''
+        site: '',
+        photo: ''
       },
       // createdId will be null, until we successfully create an fit
       createdId: null
@@ -61,7 +62,7 @@ class FitCreate extends Component {
     if (createdId) {
       console.log(createdId)
       // redirect to the fits show page
-      return <Redirect to={'/fits'} />
+      return <Redirect to='/fits/' />
     }
 
     return (
