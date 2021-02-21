@@ -1,24 +1,41 @@
-.alert {
+.alert-head {
+  display: flex;
+  flex-direction: column;
   align-items: center;
   animation: .5s ease-in-out 0s 1 light-bounce-in;
   bottom: 1rem;
   display: flex;
   left: 0;
   margin: auto;
-  max-width: 30rem;
+  max-height: 10rem;
+  max-width: fit-content;
   position: fixed;
   right: 0;
   z-index: 10000;
+  box-shadow: inset 1px 1px 10px  1px rgb(255, 2, 141), 1px 2px 3px 4px rgb(238, 220, 229);
+font-family: 'Orbitron', sans-serif;
+color: hotpink;
+text-shadow: -1px -1px 0 rgb(255, 236, 236), 1px -1px 0 #000, -1px 1px 0 rgb(46, 33, 33), 1px 1px 0 #000;
+text-emphasis-color: rgb(255, 241, 249);
+border: 2px solid rgb(0, 0, 0);
+background: black;
+
 
   .alert-body {
     margin-bottom: 0;
+text-emphasis-color: hotpink;
   }
+}
+.alert-success{
+  max-height: 1px;
+  background: whitesmoke;
 }
 
 .close {
   &:active,
   &:focus {
     outline: none;
+    text-emphasis-color: hotpink;
   }
 }
 
