@@ -77,18 +77,22 @@ class FitShow extends Component {
         <h3 className='openType'>{fit.brand}</h3>
         <h3 className='openType'>{fit.site}</h3>
         <Image src={fit.photo}/>
-        <Button
-          onClick={this.deleteFit}
-          type="submit"
-          variant="primary"
-        >
+        <div className='centerBtn'>
+          <Button
+            onClick={this.deleteFit}
+            type="submit"
+            variant="primary"
+          >
           DELETE
-        </Button>
-        <Button
-          type="submit"
-          variant="primary"
-        >
-          <Link to={`/fits/${fit.id}/edit`}>UPDATE</Link></Button>
+          </Button>
+          <Button
+            className="updateBtn"
+            type="submit"
+            variant="primary"
+          >
+            <Link className='updateTxt' to={`/fits/${fit.id}/edit`}>UPDATE</Link>
+          </Button>
+        </div>
       </div>
     )
   }

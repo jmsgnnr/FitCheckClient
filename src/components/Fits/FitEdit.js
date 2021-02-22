@@ -89,7 +89,7 @@ class UpdateFit extends Component {
       <main className='updatePage mx-auto'>
         <Fragment>
           <form onSubmit={this.handleSubmit} className='fitsDiv2 mx-auto'>
-            <h2 className='updateForm'>Update a fit</h2>
+            <h3 className='updateForm'>Update a fit</h3>
             <input
               name="name"
               type="text"
