@@ -3,6 +3,7 @@ import React, { Component, Fragment } from 'react'
 import { Redirect, withRouter } from 'react-router-dom'
 import axios from 'axios'
 import apiUrl from '../../apiConfig'
+import Button from 'react-bootstrap/Button'
 
 // class
 class UpdateFit extends Component {
@@ -85,9 +86,9 @@ class UpdateFit extends Component {
       return <Redirect to={'/fits'} />
     }
     return (
-      <main className='updatePage'>
+      <main className='updatePage mx-auto'>
         <Fragment>
-          <form onSubmit={this.handleSubmit} className='fitsDiv2'>
+          <form onSubmit={this.handleSubmit} className='fitsDiv2 mx-auto'>
             <h2 className='updateForm'>Update a fit</h2>
             <input
               name="name"
@@ -118,7 +119,12 @@ class UpdateFit extends Component {
               value={this.state.fit.photo}
               onChange={this.handleInputChange}
             />
-            <button type="submit" className='submitBtn'>Submit</button>
+            <Button
+              type="submit"
+              variant="primary"
+            >
+              Submit
+            </Button>
           </form>
         </Fragment>
       </main>

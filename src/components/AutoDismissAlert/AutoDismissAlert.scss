@@ -1,4 +1,4 @@
-.alert-head {
+.testItAll{
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -18,18 +18,9 @@ color: hotpink;
 text-shadow: -1px -1px 0 rgb(255, 236, 236), 1px -1px 0 #000, -1px 1px 0 rgb(46, 33, 33), 1px 1px 0 #000;
 text-emphasis-color: rgb(255, 241, 249);
 border: 2px solid rgb(0, 0, 0);
-background: black;
-
-
-  .alert-body {
-    margin-bottom: 0;
+margin-bottom: 0;
 text-emphasis-color: hotpink;
   }
-}
-.alert-success{
-  max-height: 1px;
-  background: whitesmoke;
-}
 
 .close {
   &:active,

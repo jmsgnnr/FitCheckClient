@@ -1,4 +1,5 @@
 import React from 'react'
+import Button from 'react-bootstrap/Button'
 
 const MyFitsForm = ({ fit, handleSubmit, handleChange }) => (
   <form className="createFitForm" onSubmit={handleSubmit}>
@@ -39,8 +40,13 @@ const MyFitsForm = ({ fit, handleSubmit, handleChange }) => (
       value={fit.photo}
       onChange={handleChange}
     />
-    <div className='submitFit'>
-      <button type='submit' className='submitBtn'>Submit</button>
+    <div className='submitFit mx-auto'>
+      <Button
+        variant="primary"
+        type='submit'
+      >
+        Submit
+      </Button>
     </div>
   </form>
 )

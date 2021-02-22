@@ -4,6 +4,7 @@ import { fitShow } from '../../api/fits'
 import apiUrl from '../../apiConfig'
 import axios from 'axios'
 import Image from 'react-bootstrap/Image'
+import Button from 'react-bootstrap/Button'
 
 class FitShow extends Component {
   constructor (props) {
@@ -71,13 +72,23 @@ class FitShow extends Component {
     }
 
     return (
-      <div className="showFitDiv">
+      <div className="showFitDiv mx-auto">
         <h3 className='fitEdit'>{fit.name}</h3>
         <h3 className='openType'>{fit.brand}</h3>
         <h3 className='openType'>{fit.site}</h3>
         <Image src={fit.photo}/>
-        <button onClick={this.deleteFit} className='submitBtn'>DELETE</button><button className='submitBtn'>
-          <Link to={`/fits/${fit.id}/edit`}>UPDATE</Link></button>
+        <Button
+          onClick={this.deleteFit}
+          type="submit"
+          variant="primary"
+        >
+          DELETE
+        </Button>
+        <Button
+          type="submit"
+          variant="primary"
+        >
+          <Link to={`/fits/${fit.id}/edit`}>UPDATE</Link></Button>
       </div>
     )
   }

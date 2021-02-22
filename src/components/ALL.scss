@@ -1,3 +1,6 @@
+$primary: rgb(255, 56, 222);
+// any bootstrap element with primary as its color will be grey
+// look into this for bootstrap files
 @import '~bootstrap/scss/bootstrap';
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Oi&display=swap');
@@ -30,11 +33,10 @@
     -webkit-text-stroke: .81px rgb(0, 0, 0);
     background-color: rgb(0, 0, 0);
     color: rgb(255, 255, 255);
-    // max-width: fit-content;
-    border: 3px solid rgb(12, 7, 7);
+    border: 1px solid rgb(250, 227, 237);
     border-radius: 3px;
-    box-shadow: inset 0px 10px 100px 10px rgba(244, 166, 247, 0.863), 0px 0px 10px 5px rgb(31, 28, 30);
-    background: url(https://cdn141.picsart.com/305184574199201.jpg?type=webp&to=crop&r=256);
+    box-shadow: 1.5px 1.5px 55px black;
+   background: url(https://cdn141.picsart.com/305184574199201.jpg?type=webp&to=crop&r=256);
     min-width: 250px;
 }
 .row{
@@ -87,4 +89,8 @@ img{
     max-height: 300px;
     box-shadow: 0px 0px 10px 2px black;
     margin: 2px auto;
+}
+.btn.btn-primary , .submitBtn{
+    border: .5px solid rgb(8, 7, 7);
+    max-width: fit-content;
 }

@@ -23,7 +23,7 @@ class AutoDismissAlert extends React.Component {
   handleClose = () => this.setState({ show: false })
 
   render () {
-    const { variant, heading, message, deleteAlert, id } = this.props
+    const { heading, message, deleteAlert, id } = this.props
 
     // Delete this alert after the fade animation time (300 ms by default)
     if (!this.state.show) {
@@ -33,10 +33,10 @@ class AutoDismissAlert extends React.Component {
     }
 
     return (
-      <Alert
+      <Alert className='testItAll'
         dismissible
         show={this.state.show}
-        variant={variant}
+        // variant={variant}
         onClose={this.handleClose}
       >
         <div className="alert-head">
