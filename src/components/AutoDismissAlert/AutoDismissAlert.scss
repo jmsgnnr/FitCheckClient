@@ -2,13 +2,14 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   animation: .1s ease-in-out 0s 1 light-bounce-in;
   display: flex;
   left: 0;
   margin: 5px;
   max-height: 10rem;
   max-width: 30rem;
-    position: fixed;
+    position: center;
   right: 0;
   z-index: 10000;
   font-family: 'Oi', cursive; 
@@ -17,7 +18,10 @@ margin-bottom: 0;
 -webkit-text-stroke: .97px rgb(0, 0, 0);
 background: rgba(10, 9, 9, 0.356);
   }
-  
+  .alert-head{
+    align-items: center;
+    justify-items: center;
+  }
 
 .close {
   &:active,

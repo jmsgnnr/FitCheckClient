@@ -1,6 +1,6 @@
 $primary: rgb(255, 56, 222);
 // any bootstrap element with primary as its color will be grey
-// look into this for bootstrap files
+// James , look into this for bootstrap files
 @import '~bootstrap/scss/bootstrap';
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Oi&display=swap');
@@ -38,7 +38,8 @@ $primary: rgb(255, 56, 222);
     border-radius: 3px;
     box-shadow: 1.5px 1.5px 55px black;
    background: url(https://cdn141.picsart.com/305184574199201.jpg?type=webp&to=crop&r=256);
-    min-width: 300px;
+    min-width: fit-content;
+    max-width: 350px;
     font-family: 'Oi', cursive;
     text-align: center;
     padding-top: 10px;
