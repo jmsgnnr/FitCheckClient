@@ -29,6 +29,8 @@ const Header = ({ user }) => (
   <Navbar className='navbar'>
     <Navbar.Brand href="#">
       FITCHECK
+      <i className="fas fa-cloud">
+      </i>
     </Navbar.Brand>
     <Navbar.Toggle aria-controls="basic-navbar-nav" />
     <Navbar.Collapse id="basic-navbar-nav">

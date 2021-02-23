@@ -11,8 +11,8 @@ $primary: rgb(255, 56, 222);
     font-family: 'Orbitron', sans-serif;
     background: repeating-conic-gradient(white 0% 25%, black 0% 50%)
     50% / 10px 10px;
-    border: 2px solid rgb(255, 17, 204);
-    border-radius: 2px;
+    border: 4px groove rgb(255, 17, 204);
+    border-radius: 6px;
     max-height: fit-content;
     
 }
@@ -25,14 +25,16 @@ $primary: rgb(255, 56, 222);
 .signUpForm, .signInRow, .createFitForm ,.changePassForm, .showFitDiv, .fitsDiv2{
     display: flex;
     flex-direction:column;
-    margin-top: 20vh;
+    margin-top: 10vh;
+    max-width: 250px;
+    margin-bottom : 10vh;
     min-height: 50vh;
     justify-content: center;
     text-shadow: -3px -2px 3px rgb(0, 0, 0);
     -webkit-text-stroke: .81px rgb(0, 0, 0);
     background-color: rgb(0, 0, 0);
     color: rgb(255, 255, 255);
-    border: 1px solid rgb(250, 227, 237);
+    border: 3px groove black;
     border-radius: 3px;
     box-shadow: 1.5px 1.5px 55px black;
    background: url(https://cdn141.picsart.com/305184574199201.jpg?type=webp&to=crop&r=256);
@@ -40,11 +42,10 @@ $primary: rgb(255, 56, 222);
     font-family: 'Oi', cursive;
     text-align: center;
     padding-top: 10px;
-    margin: center;
+    
 }
 .row{
     display: flex;
-    // flex-direction: column;
     justify-content: center;
     text-align: center;
     text-emphasis-color: white;
@@ -55,10 +56,10 @@ $primary: rgb(255, 56, 222);
 #root {
     display: flex ;
     flex-direction: column;
-  background : url(https://i1.wp.com/tdsblog.com/wp-content/uploads/2017/05/8c9bd058661aa414920ff0fe11251bd6.jpg?ssl=1)no-repeat center center;
+  background : url(https://i1.wp.com/tdsblog.com/wp-content/uploads/2017/05/8c9bd058661aa414920ff0fe11251bd6.jpg?ssl=1), url(https://www.pngkey.com/png/detail/120-1203302_put-willy-wonka-into-things-wonka-and-the.png) no-repeat no-repeat center center;
   background-size: cover;
   min-height : 100vh;
-  box-shadow : inset 10px 100px 900px 8px #000000;
+  box-shadow : inset 20px 150px 150px 10px rgb(22, 20, 22);
 background-blend-mode: lighten;
 }
 .showFitDiv {
@@ -69,6 +70,9 @@ background-blend-mode: lighten;
     display: flex;
     flex-direction: column;
     justify-content: center;
+}
+.fitDiv1{
+    justify-content: flex-start;
 }
 li{
     border: .5px solid rgb(46, 37, 37);
@@ -102,11 +106,12 @@ img{
     font-family: 'Oi', cursive; 
     margin-top: 10px;
     font-size: 70px;
-    text-shadow: 1px 1px 0px rgb(248, 234, 234);
-    color: hotpink;
-    border: 1px solid rgb(255, 248, 248);
+    text-shadow: 1px 10px 0px rgb(20, 18, 18);
+    color: rgb(255, 255, 255);
+    -webkit-text-stroke: .97px rgb(0, 0, 0);
     border-radius: 2px;
-    background: black;
+    padding-top: 20px;
+
 }
 input{
     font-family: 'Orbitron', sans-serif;    

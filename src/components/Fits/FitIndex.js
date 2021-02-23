@@ -59,7 +59,7 @@ class FitIndex extends Component {
 
     return (
       <div className='fitDiv1'>
-        <h3 className='createh3'>MY FITS!!!</h3>
+        <h3 className='createh3'>MY FIT$</h3>
         <ul>
           {fitJsx}
         </ul>
