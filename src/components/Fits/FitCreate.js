@@ -60,7 +60,6 @@ class FitCreate extends Component {
 
     // if the fit has been created and we sits id
     if (createdId) {
-      console.log(fit.photo)
       // redirect to the fits show page
       return <Redirect to='/fits/' />
     }
