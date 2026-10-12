@@ -1,0 +1,5 @@
+# All FitCheck code, documentation and CI require the owner's personal review.
+* @jmsgnnr
+# Protect changes to the review policy itself.
+/.github/CODEOWNERS @jmsgnnr
+/.github/pull_request_template.md @jmsgnnr
