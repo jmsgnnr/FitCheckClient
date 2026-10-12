@@ -4,7 +4,7 @@
 
 Author: [@jmsgnnr](https://github.com/jmsgnnr)
 
-This directory is a self-contained Vite + React + TypeScript prototype. It does not modify the legacy FitCheck client at the repository root. There are **no live catalog providers**, no backend, and no image uploads sent off-device.
+This directory is a self-contained Vite + React + TypeScript prototype. It does not modify the legacy FitCheck client at the repository root. **Live catalog providers are disabled by default.** A local Node catalog server (`v2/server/`) implements an eBay Browse keyword adapter with mocked contract tests only. No image uploads are sent off-device in this build.
 
 ## Commands
 
@@ -18,6 +18,7 @@ npm test
 npm run build
 npm run dev          # local preview at http://127.0.0.1:5173
 npm run test:e2e     # starts dev server; requires Chromium (bundled or Chrome channel)
+npm run test:catalog # Node catalog adapter tests (mocked HTTP only)
 ```
 
 Optional screenshot output directory for Playwright:
@@ -35,14 +36,32 @@ npm run test:e2e
 | `src/lib/marketplaceUrls.ts` | eBay/Etsy **handoff** URLs (user clicks; no auto-navigation) |
 | `src/lib/imageValidation.ts` | MIME + 10 MB limit for local preview |
 | `src/lib/draftStorage.ts` | `localStorage` metadata only (no image bytes) |
-| `src/lib/adapters.ts` | **Proposed** future provider adapter registry (all disconnected) |
+| `src/lib/adapters.ts` | Client-side provider status mirror (no network calls) |
+| `server/` | Credential-gated eBay keyword adapter, normalized listing schema, optional `127.0.0.1` JSON API |
+
+## Catalog provider gates (env names only)
+
+Live eBay Browse requests are **off** unless every gate below is satisfied. Do not enable in CI or local dev without owner approval and documented Buy API eligibility.
+
+| Variable | Purpose |
+| --- | --- |
+| `FITCHECK_ENABLE_LIVE_EBAY` | Must be `true` to allow outbound eBay HTTP (default: unset / disabled) |
+| `EBAY_CLIENT_ID` | Server-side OAuth client ID (never commit) |
+| `EBAY_CLIENT_SECRET` | Server-side OAuth secret (never commit) |
+| `FITCHECK_EBAY_PRODUCTION_APPROVED` | Must be `true` after eBay Buy production approval |
+| `FITCHECK_EBAY_API_ENV` | Optional `sandbox` or `production` API host |
+
+Optional local status API (not started by `npm run dev`): binds `127.0.0.1` only via `v2/server/http/server.mjs`. Endpoints: `GET /api/catalog/status`, `GET /api/catalog/search?q=...&region=US`. The UI's **Mexico** destination remains available for text handoffs, but the eBay Buy adapter deliberately **rejects MX**, because eBay's supported Buy marketplace list does not include `EBAY_MX`. A future supported-marketplace-plus-Mexico-shipping strategy must be validated before enabling it. All catalog tests use synthetic mock responses; do not interpret the `available` mock status as production access.
+
+Future `search_by_image` requires (1) owner-approved provider config and (2) explicit shopper consent before forwarding a photo. That path is not implemented here.
 
 ## Honest limitations
 
-- Photo understanding and in-app listing cards are **not implemented**.
-- "Search eBay" / "Search Etsy" open marketplace search pages with your phrase; they are not FitCheck results.
+- Photo understanding and in-app listing cards are **not implemented** in the UI.
+- The catalog server does not run automatically; the UI still shows **no live sellers connected**. Even when the server runs locally, actual outgoing requests remain disabled without all three independent enablement/approval/credential gates.
+- "Search eBay" / "Search Etsy" open marketplace search pages with your phrase; they are not FitCheck catalog results.
 - Human concierge is preparation-only; nothing is transmitted.
-- No affiliate revenue is claimed in this build.
+- No affiliate revenue is claimed in this build. The normalized server adapter labels current inventory as **availability unknown** unless a documented live item check establishes purchasability. Asking prices never establish the cheapest delivered offer when shipping/tax or currency comparability is missing.
 
 ## Design
 
