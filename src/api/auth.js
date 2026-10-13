@@ -1,55 +1,24 @@
 import apiUrl from '../apiConfig'
 import axios from 'axios'
+import {
+  buildSignUpOptions,
+  buildSignInOptions,
+  buildSignOutOptions,
+  buildChangePasswordOptions
+} from './requestContracts'
 
 export const signUp = credentials => {
-  return axios({
-    method: 'POST',
-    url: apiUrl + '/sign-up',
-    data: {
-      credentials: {
-        email: credentials.email,
-        password: credentials.password,
-        password_confirmation: credentials.passwordConfirmation
-      }
-    }
-  })
+  return axios(buildSignUpOptions(apiUrl, credentials))
 }
 
 export const signIn = credentials => {
-  return axios({
-    url: apiUrl + '/sign-in',
-    method: 'POST',
-    data: {
-      credentials: {
-        email: credentials.email,
-        password: credentials.password
-      }
-    }
-  })
+  return axios(buildSignInOptions(apiUrl, credentials))
 }
 
 export const signOut = user => {
-  return axios({
-    url: apiUrl + '/sign-out',
-    method: 'DELETE',
-    headers: {
-      'Authorization': `Token token=${user.token}`
-    }
-  })
+  return axios(buildSignOutOptions(apiUrl, user))
 }
 
 export const changePassword = (passwords, user) => {
-  return axios({
-    url: apiUrl + '/change-password',
-    method: 'PATCH',
-    headers: {
-      'Authorization': `Token token=${user.token}`
-    },
-    data: {
-      passwords: {
-        old: passwords.oldPassword,
-        new: passwords.newPassword
-      }
-    }
-  })
+  return axios(buildChangePasswordOptions(apiUrl, passwords, user))
 }
