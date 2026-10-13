@@ -332,6 +332,24 @@
   cursor: not-allowed;
 }
 
+.provider-details {
+  margin-top: 0.85rem;
+}
+
+.provider-details summary {
+  width: fit-content;
+  cursor: pointer;
+  font: 700 0.8rem Consolas, "Courier New", monospace;
+  letter-spacing: 0.03em;
+  text-decoration: underline;
+  text-underline-offset: 0.22rem;
+}
+
+.provider-details summary:focus-visible {
+  outline: 3px solid var(--pink);
+  outline-offset: 4px;
+}
+
 .coverage-list {
   list-style: none;
   padding: 0;

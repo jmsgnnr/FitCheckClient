@@ -26,7 +26,7 @@ import {
 import { buildSearchPhrase, isSearchReady } from "./lib/searchPhrase";
 import "./styles/app.css";
 
-type ActiveStep = "photo" | "hunt" | "found";
+type ActiveStep = "photo" | "describe" | "ready";
 
 export default function App() {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -72,8 +72,8 @@ export default function App() {
   const activeStep: ActiveStep = !hasPhoto
     ? "photo"
     : searchReady
-      ? "found"
-      : "hunt";
+      ? "ready"
+      : "describe";
 
   useEffect(() => {
     const saved = loadDraft();
@@ -257,14 +257,14 @@ export default function App() {
             [01 Photo]
           </span>
           <span
-            className={`step-tag ${activeStep === "hunt" ? "is-active" : ""}`}
+            className={`step-tag ${activeStep === "describe" ? "is-active" : ""}`}
           >
-            [02 Hunt]
+            [02 Describe]
           </span>
           <span
-            className={`step-tag ${activeStep === "found" ? "is-active" : ""}`}
+            className={`step-tag ${activeStep === "ready" ? "is-active" : ""}`}
           >
-            [03 Found?]
+            [03 Ready]
           </span>
         </nav>
       </header>
@@ -444,7 +444,8 @@ export default function App() {
           <h2 id="hunt-heading">Your hunt phrase</h2>
           <p className="honest-note">
             Same one? Close cut? This phrase is built from your words, not from
-            hidden image recognition.
+            hidden image recognition. We haven&apos;t found a seller or searched
+            any store for you yet.
           </p>
           <p className="phrase-box" aria-label="Constructed search phrase">
             {searchReady
@@ -506,14 +507,17 @@ export default function App() {
             FitCheck.
           </p>
         )}
-        <ul className="coverage-list">
-          {PLANNED_ADAPTERS.map((adapter) => (
-            <li key={adapter.id}>
-              <span>{adapter.label}</span>
-              <span className="status-pill">{adapter.state}</span>
-            </li>
-          ))}
-        </ul>
+        <details className="provider-details">
+          <summary>See supported and planned sources</summary>
+          <ul className="coverage-list">
+            {PLANNED_ADAPTERS.map((adapter) => (
+              <li key={adapter.id}>
+                <span>{adapter.label}</span>
+                <span className="status-pill">{adapter.state}</span>
+              </li>
+            ))}
+          </ul>
+        </details>
       </section>
 
       <section className="panel" aria-labelledby="concierge-heading">
