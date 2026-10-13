@@ -120,3 +120,86 @@ test("does not claim a seller match before searching; source status expands on d
   await expect(details).toHaveAttribute("open", "");
   await expect(page.getByText("eBay Browse (keyword)")).toBeVisible();
 });
+
+test("does not contact local catalog automatically; offline checking is explicit", async ({ page }) => {
+  const requests: string[] = [];
+  await page.route("http://127.0.0.1:3927/**", async (route) => {
+    requests.push(route.request().url());
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      headers: { "access-control-allow-origin": "http://127.0.0.1:5173" },
+      body: JSON.stringify({ ebay: { provider: "ebay", status: "disabled", liveRequestsAllowed: false, supportedRegions: ["US"], keywordSearch: true } }),
+    });
+  });
+  await page.goto("/");
+  await expect(page.getByText(/no live sellers connected yet/i)).toBeVisible();
+  expect(requests).toHaveLength(0);
+
+  await page.getByRole("button", { name: "Check local catalog" }).click();
+  await expect(page.getByText(/provider is disabled or awaiting approval/i)).toBeVisible();
+  expect(requests).toHaveLength(1);
+  expect(requests[0]).toBe("http://127.0.0.1:3927/api/catalog/status");
+  await expect(page.getByRole("button", { name: "Search connected listings" })).toHaveCount(0);
+});
+
+test("only a shopper click searches simulated local provider; result is clearly unverified", async ({ page }) => {
+  const requests: string[] = [];
+  await page.route("http://127.0.0.1:3927/**", async (route) => {
+    const url = route.request().url();
+    requests.push(url);
+    const data = url.endsWith("/status") ? {
+      ebay: { provider: "ebay", status: "available", liveRequestsAllowed: true, supportedRegions: ["US"], keywordSearch: true },
+    } : {
+      provider: "ebay", status: "available", region: "US", checkedAt: "2026-10-13T00:00:00Z",
+      listings: [{
+        source: "ebay", listingId: "synthetic-e2e", title: "Synthetic jacket fixture (not inventory)",
+        merchantUrl: "https://www.ebay.com/itm/123", matching: "unverified", availability: "unknown",
+        price: { amount: 54, currency: "USD" }, shipping: null, condition: "used",
+        sizeText: "L", checkedAt: "2026-10-13T00:00:00Z",
+      }],
+    };
+    await route.fulfill({ status: 200, contentType: "application/json",
+      headers: { "access-control-allow-origin": "http://127.0.0.1:5173" }, body: JSON.stringify(data) });
+  });
+  await page.goto("/");
+  await page.locator('input[type="file"]').setInputFiles(fixturePng);
+  await page.getByLabel("Item focus").selectOption("Jacket");
+  await page.getByLabel("Describe the piece").fill("brown corduroy chore coat");
+  await expect(page.getByText("Synthetic jacket fixture (not inventory)")).toHaveCount(0);
+
+  await page.getByRole("button", { name: "Check local catalog" }).click();
+  await expect(page.getByText(/local keyword catalog enabled/i)).toBeVisible();
+  expect(requests).toHaveLength(1);
+  await page.getByRole("button", { name: "Search connected listings" }).click();
+  await expect(page.getByText("Synthetic jacket fixture (not inventory)")).toBeVisible();
+  await expect(page.getByText(/Keyword listings from eBay · not photo-matched/i)).toBeVisible();
+  await expect(page.getByText("Shipping unknown", { exact: false })).toBeVisible();
+  const link = page.getByRole("link", { name: "View original eBay listing" });
+  await expect(link).toHaveAttribute("href", "https://www.ebay.com/itm/123");
+  await expect(link).toHaveAttribute("rel", /noreferrer/);
+  expect(requests).toHaveLength(2);
+  expect(new URL(requests[1]).searchParams.get("q")).toContain("brown corduroy");
+
+  await page.getByLabel("Describe the piece").fill("green velvet shirt");
+  await expect(page.getByText("Synthetic jacket fixture (not inventory)")).toHaveCount(0);
+});
+
+test("long catalog queries provide guidance and do not send a search", async ({ page }) => {
+  const requests: string[] = [];
+  await page.route("http://127.0.0.1:3927/**", async (route) => {
+    requests.push(route.request().url());
+    await route.fulfill({ status: 200, contentType: "application/json",
+      headers: { "access-control-allow-origin": "http://127.0.0.1:5173" },
+      body: JSON.stringify({ ebay: { provider: "ebay", status: "available", liveRequestsAllowed: true, supportedRegions: ["US"], keywordSearch: true } }),
+    });
+  });
+  await page.goto("/");
+  await page.locator('input[type="file"]').setInputFiles(fixturePng);
+  await page.getByLabel("Item focus").selectOption("Jacket");
+  await page.getByLabel("Describe the piece").fill("very long coat ".repeat(14));
+  await page.getByRole("button", { name: "Check local catalog" }).click();
+  await expect(page.getByText(/search is too long for the local catalog/i)).toBeVisible();
+  await expect(page.getByRole("button", { name: "Search connected listings" })).toHaveCount(0);
+  expect(requests).toHaveLength(1);
+});
