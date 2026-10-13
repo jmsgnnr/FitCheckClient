@@ -7,7 +7,13 @@ import {
   type ChangeEvent,
   type DragEvent,
 } from "react";
-import { hasLiveSellerConnection, PLANNED_ADAPTERS } from "./lib/adapters";
+import { PLANNED_ADAPTERS } from "./lib/adapters";
+import {
+  checkLocalCatalog,
+  searchLocalCatalog,
+  type CatalogResults,
+  type LocalCatalogStatus,
+} from "./lib/catalogClient";
 import { parseBudgetInput } from "./lib/budgetValidation";
 import {
   buildConciergeBrief,
@@ -47,9 +53,15 @@ export default function App() {
   const [conciergeOpen, setConciergeOpen] = useState(false);
   const [conciergeNote, setConciergeNote] = useState("");
   const [conciergeEmail, setConciergeEmail] = useState("");
+  const [catalogStatus, setCatalogStatus] = useState<LocalCatalogStatus | null>(null);
+  const [catalogChecking, setCatalogChecking] = useState(false);
+  const [catalogConnectionError, setCatalogConnectionError] = useState(false);
+  const [catalogSearching, setCatalogSearching] = useState(false);
+  const [catalogError, setCatalogError] = useState(false);
+  const [catalogResult, setCatalogResult] = useState<{ key: string; data: CatalogResults } | null>(null);
+  const catalogRequestId = useRef(0);
 
   const hasPhoto = previewUrl != null;
-  const liveSellers = hasLiveSellerConnection();
 
   const draftInput = useMemo(
     () => ({
@@ -68,6 +80,44 @@ export default function App() {
     [draftInput],
   );
   const searchReady = isSearchReady(draftInput);
+  const catalogKey = JSON.stringify([searchPhrase, region]);
+  const shownCatalog = catalogResult?.key === catalogKey ? catalogResult.data : null;
+  const canSearchCatalog = searchReady && catalogStatus?.kind === "available" &&
+    catalogStatus.supportedRegions.includes(region) && searchPhrase.length <= 120 && !catalogSearching;
+
+  const checkCatalogConnection = async () => {
+    const requestId = ++catalogRequestId.current;
+    setCatalogChecking(true);
+    setCatalogConnectionError(false);
+    setCatalogStatus(null);
+    setCatalogResult(null);
+    setCatalogError(false);
+    try {
+      const status = await checkLocalCatalog();
+      if (catalogRequestId.current === requestId) setCatalogStatus(status);
+    } catch {
+      if (catalogRequestId.current === requestId) setCatalogConnectionError(true);
+    } finally {
+      if (catalogRequestId.current === requestId) setCatalogChecking(false);
+    }
+  };
+
+  const searchConnectedCatalog = async () => {
+    if (!canSearchCatalog) return;
+    const requestId = ++catalogRequestId.current;
+    const key = catalogKey;
+    setCatalogSearching(true);
+    setCatalogResult(null);
+    setCatalogError(false);
+    try {
+      const result = await searchLocalCatalog(searchPhrase, region);
+      if (catalogRequestId.current === requestId) setCatalogResult({ key, data: result });
+    } catch {
+      if (catalogRequestId.current === requestId) setCatalogError(true);
+    } finally {
+      if (catalogRequestId.current === requestId) setCatalogSearching(false);
+    }
+  };
 
   const activeStep: ActiveStep = !hasPhoto
     ? "photo"
@@ -214,6 +264,10 @@ export default function App() {
 
   const resetAll = () => {
     imageRequestId.current += 1;
+    catalogRequestId.current += 1;
+    setCatalogSearching(false);
+    setCatalogResult(null);
+    setCatalogError(false);
     revokePreview(previewUrl);
     setPreviewUrl(null);
     setImageError(null);
@@ -497,15 +551,58 @@ export default function App() {
 
       <section className="panel" aria-labelledby="catalog-heading">
         <h2 id="catalog-heading">Catalog connection status</h2>
-        {liveSellers ? (
-          <p>Live seller adapters are connected.</p>
-        ) : (
-          <p className="honest-note">
-            <strong>No live sellers connected yet.</strong> Integrated search
-            will land here once partner APIs are approved. Until then, use the
-            marketplace handoff links above; they are not scraped results from
-            FitCheck.
-          </p>
+        <p className="honest-note">
+          <strong>{catalogStatus?.kind === "available"
+            ? "Local keyword catalog enabled."
+            : "No live sellers connected yet."}</strong>{" "}
+          {catalogStatus?.kind === "available"
+            ? "This does not verify any photo match or guarantee an item is still available. Only your explicit search checks local catalog results."
+            : "The optional eBay adapter is off by default. Marketplace links above are user-initiated handoffs, not results from FitCheck."}
+        </p>
+        <div className="action-row">
+          <button type="button" className="btn btn-ghost" onClick={checkCatalogConnection} disabled={catalogChecking || catalogSearching}>
+            {catalogChecking ? "Checking local catalog..." : "Check local catalog"}
+          </button>
+          {canSearchCatalog && (
+            <button type="button" className="btn btn-secondary" onClick={searchConnectedCatalog}>
+              Search connected listings
+            </button>
+          )}
+        </div>
+        <p className="catalog-helper">Optional check contacts only 127.0.0.1 on this device. No photo or search text is sent by checking status. Searches run only when you click Search connected listings.</p>
+        {catalogConnectionError && <p role="status">Local catalog unavailable. Marketplace links remain available.</p>}
+        {catalogStatus?.kind === "disabled" && <p role="status">Local provider is disabled or awaiting approval; no live request was made.</p>}
+        {catalogStatus?.kind === "available" && !catalogStatus.supportedRegions.includes(region) && (
+          <p role="status">Connected eBay catalog supports US only. Mexico shipping search is not yet available.</p>
+        )}
+        {catalogStatus?.kind === "available" && searchReady && searchPhrase.length > 120 && (
+          <p role="status">Your search is too long for the local catalog. Shorten the description to fit 120 characters.</p>
+        )}
+        {catalogSearching && <p role="status">Checking permitted keyword listings...</p>}
+        {catalogError && <p role="status">Search could not complete. No items have been verified. Use a marketplace link instead.</p>}
+        {shownCatalog && (
+          <div className="catalog-results" aria-live="polite">
+            <h3>Keyword listings from eBay · not photo-matched</h3>
+            <p className="catalog-helper">These are seller-provided listing prices, not verified lowest delivered prices. Availability and tax may be unknown.</p>
+            {shownCatalog.listings.length === 0 ? (
+              <p>No supported items returned for this keyword search.</p>
+            ) : (
+              <ul className="listing-list">
+                {shownCatalog.listings.map((item) => (
+                  <li key={item.listingId}>
+                    <strong>{item.title}</strong>
+                    <p>{item.price.currency} {item.price.amount.toFixed(2)} · {item.shipping === null
+                      ? "Shipping unknown"
+                      : item.shipping.currency === item.price.currency
+                        ? `Shipping ${item.shipping.currency} ${item.shipping.amount.toFixed(2)}`
+                        : "Shipping currency differs; total unknown"}</p>
+                    <p className="catalog-helper">Condition: {item.condition} · Size: {item.sizeText || "unverified"} · Checked: {item.checkedAt.slice(0, 10)} · Availability unverified</p>
+                    <a href={item.merchantUrl} target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer">View original eBay listing</a>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         )}
         <details className="provider-details">
           <summary>See supported and planned sources</summary>
