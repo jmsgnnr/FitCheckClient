@@ -2,10 +2,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   buildConciergeBrief,
   clearDraft,
+  isDraftEmpty,
+  isSavingPaused,
   loadDraft,
   saveDraft,
+  setSavingPaused,
 } from "./draftStorage";
-import { DRAFT_MAX_TEXT_LENGTH, DRAFT_STORAGE_KEY, DRAFT_TTL_MS } from "./constants";
+import { DRAFT_MAX_TEXT_LENGTH, DRAFT_PAUSE_KEY, DRAFT_STORAGE_KEY, DRAFT_TTL_MS } from "./constants";
 import { buildSearchPhrase } from "./searchPhrase";
 
 describe("draftStorage", () => {
@@ -119,6 +122,14 @@ describe("restored draft validation", () => {
     expect(loadDraft(NOW)).not.toBeNull();
   });
 
+  it("rewrites a legacy draft without extras but keeps its savedAt", () => {
+    put({ ...good, conciergeEmail: "a@b.co" });
+    expect(loadDraft(NOW)?.savedAt).toBe(good.savedAt);
+    const raw = localStorage.getItem(DRAFT_STORAGE_KEY) ?? "";
+    expect(raw).not.toContain("a@b.co");
+    expect(JSON.parse(raw).savedAt).toBe(good.savedAt);
+  });
+
   it("restored output never carries unexpected fields", () => {
     put({ ...good, conciergeEmail: "a@b.co", imageData: "data:image/png;base64,AAAA" });
     const draft = loadDraft(NOW);
@@ -223,5 +234,39 @@ describe("surrogate safety", () => {
     const restored = loadDraft();
     expect(restored?.description).toBe("ab");
     expect(restored?.conciergeNote).toBe("n");
+  });
+});
+
+describe("saving preference and emptiness", () => {
+  beforeEach(() => localStorage.clear());
+  afterEach(() => vi.restoreAllMocks());
+
+  it("pause flag round-trips and holds no shopper data", () => {
+    expect(isSavingPaused()).toBe(false);
+    expect(setSavingPaused(true)).toBe(true);
+    expect(isSavingPaused()).toBe(true);
+    expect(localStorage.getItem(DRAFT_PAUSE_KEY)).toBe("1");
+    expect(setSavingPaused(false)).toBe(true);
+    expect(isSavingPaused()).toBe(false);
+  });
+
+  it("pause helpers never throw when storage is blocked", () => {
+    vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => { throw new DOMException("x", "SecurityError"); });
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => { throw new DOMException("x", "SecurityError"); });
+    expect(isSavingPaused()).toBe(false);
+    expect(setSavingPaused(true)).toBe(false);
+  });
+
+  it("isDraftEmpty only ignores default condition/region", () => {
+    const base = { category: "" as const, description: "", size: "", condition: "either" as const, region: "MX" as const, budgetUsd: null, conciergeNote: "" };
+    expect(isDraftEmpty(base)).toBe(true);
+    expect(isDraftEmpty({ ...base, conciergeNote: "n" })).toBe(false);
+    expect(isDraftEmpty({ ...base, budgetUsd: 5 })).toBe(false);
+  });
+
+  it("deleted drafts stay deleted through load", () => {
+    saveDraft({ category: "Coat", description: "x", size: "", condition: "either", region: "US", budgetUsd: null, conciergeNote: "n", savedAt: new Date().toISOString() });
+    expect(clearDraft()).toBe(true);
+    expect(loadDraft()).toBeNull();
   });
 });

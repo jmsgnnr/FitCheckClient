@@ -368,11 +368,11 @@
 
 .listing-list a { color: #693044; font-weight: 700; }
 
-.provider-details {
+.provider-details, .saved-details {
   margin-top: 0.85rem;
 }
 
-.provider-details summary {
+.provider-details summary, .saved-details summary {
   width: fit-content;
   cursor: pointer;
   font: 700 0.8rem Consolas, "Courier New", monospace;
@@ -381,7 +381,7 @@
   text-underline-offset: 0.22rem;
 }
 
-.provider-details summary:focus-visible {
+.provider-details summary:focus-visible, .saved-details summary:focus-visible {
   outline: 3px solid var(--pink);
   outline-offset: 4px;
 }
@@ -431,3 +431,9 @@
 .site-footer p {
   margin: 0.35rem 0;
 }
+
+.saved-fields { display: grid; grid-template-columns: max-content 1fr; gap: 0.25rem 1rem; margin: 0.75rem 0 0; }
+.saved-fields dt { font-weight: 600; }
+.saved-fields dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+.saved-note { white-space: pre-wrap; }
+@media (max-width: 480px) { .saved-fields { grid-template-columns: 1fr; } }

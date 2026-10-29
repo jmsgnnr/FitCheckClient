@@ -8,6 +8,9 @@ export const ALLOWED_IMAGE_MIME = new Set([
 
 export const DRAFT_STORAGE_KEY = "fitcheck-v2-search-draft-v1";
 
+/** Bare "saving paused" flag; holds no shopper data. */
+export const DRAFT_PAUSE_KEY = "fitcheck-v2-search-draft-paused-v1";
+
 /** Saved search fields older than this are discarded on load. */
 export const DRAFT_TTL_DAYS = 30;
 export const DRAFT_TTL_MS = DRAFT_TTL_DAYS * 24 * 60 * 60 * 1000;
