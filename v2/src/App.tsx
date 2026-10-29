@@ -27,6 +27,7 @@ import { canDecodeImage } from "./lib/imageDecode";
 import { IMAGE_DECODE_ERROR, validateImageCompleteness, validateImageContent } from "./lib/imageValidation";
 import { buildMarketplaceSearchUrl } from "./lib/marketplaceUrls";
 import {
+  DRAFT_MAX_TEXT_LENGTH,
   ITEM_CATEGORIES,
   type ItemCategory,
   type ItemCondition,
@@ -84,6 +85,9 @@ export default function App() {
   const [imageError, setImageError] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [copyStatus, setCopyStatus] = useState<string | null>(null);
+  const [limitHit, setLimitHit] = useState<Record<"description" | "size" | "note", boolean>>({
+    description: false, size: false, note: false,
+  });
   const [storageWarning, setStorageWarning] = useState<string | null>(null);
 
   const [category, setCategory] = useState<ItemCategory | "">("");
@@ -118,6 +122,14 @@ export default function App() {
     }),
     [category, description, size, condition, region, budgetUsd],
   );
+
+  const limited = (field: "description" | "size" | "note", set: (v: string) => void) =>
+    (value: string) => {
+      const tooLong = value.length > DRAFT_MAX_TEXT_LENGTH;
+      set(tooLong ? value.slice(0, DRAFT_MAX_TEXT_LENGTH) : value);
+      setLimitHit((prev) => (prev[field] === tooLong ? prev : { ...prev, [field]: tooLong }));
+    };
+  const limitMessage = `Text was shortened to the ${DRAFT_MAX_TEXT_LENGTH.toLocaleString("en-US")} character limit.`;
 
   const searchPhrase = useMemo(
     () => buildSearchPhrase(draftInput),
@@ -525,18 +537,22 @@ export default function App() {
               <textarea
                 id="description"
                 value={description}
-                onChange={(e) => setDescription(e.target.value)}
+                onChange={(e) => limited("description", setDescription)(e.target.value)}
+                aria-describedby="description-limit"
                 placeholder="e.g. brown suede trucker jacket, brass buttons, 90s cut"
               />
+              <p id="description-limit" role="status" className="honest-note">{limitHit.description ? limitMessage : ""}</p>
             </div>
             <div className="field">
               <label htmlFor="size">Size (optional)</label>
               <input
                 id="size"
                 value={size}
-                onChange={(e) => setSize(e.target.value)}
+                onChange={(e) => limited("size", setSize)(e.target.value)}
+                aria-describedby="size-limit"
                 placeholder="M / 8 / 32 waist"
               />
+              <p id="size-limit" role="status" className="honest-note">{limitHit.size ? limitMessage : ""}</p>
             </div>
             <div className="field">
               <label htmlFor="budget">Max budget USD (optional)</label>
@@ -744,9 +760,11 @@ export default function App() {
                 <textarea
                   id="concierge-note"
                   value={conciergeNote}
-                  onChange={(e) => setConciergeNote(e.target.value)}
+                  onChange={(e) => limited("note", setConciergeNote)(e.target.value)}
+                  aria-describedby="note-limit"
                   placeholder="Sold out drop, unusual size, need authentic vintage only..."
                 />
+                <p id="note-limit" role="status" className="honest-note">{limitHit.note ? limitMessage : ""}</p>
               </div>
               <div className="field field-full">
                 <label htmlFor="concierge-email">
