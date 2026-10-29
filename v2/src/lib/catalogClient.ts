@@ -7,6 +7,14 @@ import type { ShipRegion } from "./constants";
 
 const LOCAL_ORIGIN = "http://127.0.0.1:3927";
 const MAX_BODY_CHARS = 100_000;
+/** Status checks are local and cheap. */
+export const LOCAL_STATUS_TIMEOUT_MS = 5_000;
+/**
+ * Search waits for the server's overall provider deadline (12s in
+ * server/ebay/config.mjs OVERALL_DEADLINE_MS) plus margin, so the browser never
+ * gives up before the server can report its own timeout.
+ */
+export const LOCAL_SEARCH_TIMEOUT_MS = 15_000;
 const MAX_LISTINGS = 10;
 
 export interface LocalCatalogStatus {
@@ -43,11 +51,19 @@ function asRecord(value: unknown): Record<string, unknown> | null {
     : null;
 }
 
-async function readJson(path: string): Promise<unknown> {
+/**
+ * The loopback catalog bridge exists only in a developer's local build.
+ * Production bundles must not offer it and must never probe a visitor's localhost.
+ */
+export function isLocalCatalogSupported(): boolean {
+  return import.meta.env.DEV === true;
+}
+
+async function readJson(path: string, timeoutMs: number): Promise<unknown> {
   // Never probe a visitor’s localhost from a production-hosted website.
-  if (!import.meta.env.DEV) throw new LocalCatalogError();
+  if (!isLocalCatalogSupported()) throw new LocalCatalogError();
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 5_000);
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
   try {
     const response = await fetch(LOCAL_ORIGIN + path, {
       method: "GET",
@@ -89,7 +105,7 @@ export function parseLocalStatus(raw: unknown): LocalCatalogStatus {
 }
 
 export async function checkLocalCatalog(): Promise<LocalCatalogStatus> {
-  return parseLocalStatus(await readJson("/api/catalog/status"));
+  return parseLocalStatus(await readJson("/api/catalog/status", LOCAL_STATUS_TIMEOUT_MS));
 }
 
 function validEbayUrl(value: unknown): value is string {
@@ -157,5 +173,5 @@ export async function searchLocalCatalog(query: string, region: ShipRegion): Pro
     throw new LocalCatalogError();
   }
   const params = new URLSearchParams({ q: query, region: "US", limit: String(MAX_LISTINGS) });
-  return parseCatalogResults(await readJson("/api/catalog/search?" + params.toString()));
+  return parseCatalogResults(await readJson("/api/catalog/search?" + params.toString(), LOCAL_SEARCH_TIMEOUT_MS));
 }

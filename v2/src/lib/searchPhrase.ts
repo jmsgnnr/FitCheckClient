@@ -9,6 +9,13 @@ export interface SearchDraftInput {
   budgetUsd: number | null;
 }
 
+/**
+ * Text-only keywords: item type, description, size and condition.
+ * Destination and budget are deliberately NOT appended. Neither eBay's keyword
+ * search nor this app's catalog adapter treats "ship US" or "under $80" as a
+ * verified filter, and extra words can silently exclude good listings. They are
+ * shown beside the phrase as unapplied constraints (see shoppingConstraints.ts).
+ */
 export function buildSearchPhrase(input: SearchDraftInput): string {
   const parts: string[] = [];
   if (input.category) {
@@ -26,14 +33,6 @@ export function buildSearchPhrase(input: SearchDraftInput): string {
     parts.push("new");
   } else if (input.condition === "used") {
     parts.push("used pre-owned");
-  }
-  if (input.region === "MX") {
-    parts.push("ship Mexico");
-  } else {
-    parts.push("ship US");
-  }
-  if (input.budgetUsd != null) {
-    parts.push(`under $${Math.round(input.budgetUsd)}`);
   }
   return parts.join(" ").replace(/\s+/g, " ").trim();
 }

@@ -13,7 +13,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
-    "test:catalog": "node --test server/tests/catalog-schema.test.mjs server/tests/ebay-config.test.mjs server/tests/ebay-adapter.test.mjs server/tests/http-server.test.mjs"
+    "test:catalog": "node --test server/tests/catalog-schema.test.mjs server/tests/ebay-config.test.mjs server/tests/ebay-adapter.test.mjs server/tests/http-server.test.mjs server/tests/ebay-deadline.test.mjs"
   },
   "dependencies": {
     "react": "18.3.1",

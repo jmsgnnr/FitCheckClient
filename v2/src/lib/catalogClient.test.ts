@@ -1,6 +1,7 @@
 import { afterEach, expect, it, vi } from "vitest";
 import {
-  checkLocalCatalog, parseCatalogResults, parseLocalStatus,
+  checkLocalCatalog, isLocalCatalogSupported, LOCAL_SEARCH_TIMEOUT_MS, LOCAL_STATUS_TIMEOUT_MS,
+  parseCatalogResults, parseLocalStatus,
   searchLocalCatalog, LocalCatalogError,
 } from "./catalogClient";
 
@@ -88,4 +89,48 @@ it("rejects invalid responses without implying successful search", async () => {
   vi.stubGlobal("fetch", vi.fn(async () => mockedResponse({ status: "available", listings: "fake" })));
   await expect(searchLocalCatalog("Jacket brown", "US")).rejects.toThrow(LocalCatalogError);
   expect(() => parseCatalogResults({ ...example, region: "MX" })).toThrow(LocalCatalogError);
+});
+
+it("production builds never contact localhost and report the bridge unsupported", async () => {
+  vi.stubEnv("DEV", false);
+  const fetcher = vi.fn();
+  vi.stubGlobal("fetch", fetcher);
+  expect(isLocalCatalogSupported()).toBe(false);
+  await expect(checkLocalCatalog()).rejects.toThrow(LocalCatalogError);
+  await expect(searchLocalCatalog("Jacket brown suede", "US")).rejects.toThrow(LocalCatalogError);
+  expect(fetcher).not.toHaveBeenCalled();
+  vi.unstubAllEnvs();
+});
+
+it("development builds report the bridge supported", () => {
+  expect(isLocalCatalogSupported()).toBe(true);
+});
+
+it("browser search timeout exceeds the server's 12s overall provider deadline", () => {
+  expect(LOCAL_SEARCH_TIMEOUT_MS).toBeGreaterThan(12_000);
+  expect(LOCAL_STATUS_TIMEOUT_MS).toBeLessThan(LOCAL_SEARCH_TIMEOUT_MS);
+});
+
+it("search uses the long timeout and aborts a stalled local body", async () => {
+  vi.useFakeTimers();
+  try {
+    vi.stubGlobal("fetch", vi.fn(async (_url: string, options: RequestInit) => ({
+      ok: true,
+      headers: new Headers(),
+      text: () => new Promise<string>((_, reject) => {
+        options.signal?.addEventListener("abort", () => reject(new Error("aborted")));
+      }),
+    })));
+    const pending = searchLocalCatalog("Jacket brown suede", "US");
+    const settled = pending.then(() => "ok", (error) => error);
+    await vi.advanceTimersByTimeAsync(LOCAL_SEARCH_TIMEOUT_MS - 1);
+    let early = false;
+    settled.then(() => { early = true; });
+    await Promise.resolve();
+    expect(early).toBe(false);
+    await vi.advanceTimersByTimeAsync(2);
+    expect(await settled).toBeInstanceOf(LocalCatalogError);
+  } finally {
+    vi.useRealTimers();
+  }
 });
