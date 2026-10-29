@@ -104,4 +104,53 @@ test.describe("durable draft deletion without a photo", () => {
     await expect(b.getByLabel("Sourcing brief preview")).toContainText("edit in the other tab");
     expect(await b.evaluate((k) => localStorage.getItem(k), KEY)).toBeNull();
   });
+
+  test("resuming saving in one tab does not let a stale tab overwrite the new draft", async ({ context }) => {
+    const a = await context.newPage();
+    await a.addInitScript(([key, value]) => {
+      if (!localStorage.getItem(key) && !localStorage.getItem("fitcheck-v2-search-draft-paused-v1")) localStorage.setItem(key, value);
+    }, [KEY, JSON.stringify(seed())]);
+    await a.goto("/");
+    const b = await context.newPage();
+    await b.goto("/");
+    await expect(b.getByTestId("saved-fields")).toBeVisible();
+
+    // A deletes (both tabs paused), then A resumes and writes a fresh draft.
+    await a.getByRole("button", { name: /delete saved fields/i }).click();
+    await expect(b.getByRole("button", { name: /turn saving back on/i })).toBeVisible();
+    await a.getByRole("button", { name: /turn saving back on/i }).click();
+    await a.getByRole("button", { name: /prepare sourcing brief/i }).click();
+    await a.getByLabel("What makes this hunt hard?").fill("fresh draft from tab A");
+    await expect.poll(() => a.evaluate((k) => localStorage.getItem(k) ?? "", KEY)).toContain("fresh draft from tab A");
+
+    // B syncs to "saving on" and shows A's draft, but did not write its stale fields.
+    await expect(b.getByRole("button", { name: /turn saving back on/i })).toHaveCount(0);
+    await expect(b.getByTestId("saved-fields")).toContainText(/removed automatically/i);
+    await b.waitForTimeout(300);
+    const raw = await b.evaluate((k) => localStorage.getItem(k) ?? "", KEY);
+    // Byte-identical to what A wrote (same savedAt): B did not rewrite it.
+    expect(raw).toBe(await a.evaluate((k) => localStorage.getItem(k) ?? "", KEY));
+    expect(raw).toContain("fresh draft from tab A");
+  });
+
+  test("a tab holding unsaved local fields does not overwrite another tab's draft when saving resumes remotely", async ({ context }) => {
+    const b = await context.newPage();
+    await b.addInitScript(() => localStorage.setItem("fitcheck-v2-search-draft-paused-v1", "1"));
+    await b.goto("/");
+    await b.getByRole("button", { name: /prepare sourcing brief/i }).click();
+    await b.getByLabel("What makes this hunt hard?").fill("stale unsaved text in B");
+    const a = await context.newPage();
+    await a.goto("/");
+    const theirs = JSON.stringify(seed({ conciergeNote: "draft written by A" }));
+    await a.evaluate(([k, v]) => {
+      localStorage.setItem(k, v);
+      localStorage.removeItem("fitcheck-v2-search-draft-paused-v1"); // A resumes saving
+    }, [KEY, theirs]);
+    await expect(b.getByRole("button", { name: /turn saving back on/i })).toHaveCount(0);
+    await b.waitForTimeout(300);
+    expect(await b.evaluate((k) => localStorage.getItem(k) ?? "", KEY)).toBe(theirs);
+    // A genuine local edit in B afterwards does save.
+    await b.getByLabel("What makes this hunt hard?").fill("real edit in B");
+    await expect.poll(() => b.evaluate((k) => localStorage.getItem(k) ?? "", KEY)).toContain("real edit in B");
+  });
 });

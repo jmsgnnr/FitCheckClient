@@ -110,6 +110,12 @@ export default function App() {
   const [savedDraft, setSavedDraft] = useState<PersistedDraft | null>(initial);
   // Fingerprint of what storage already holds, so restoring a draft never re-saves
   // it (which would silently extend its retention) and unchanged fields never rewrite.
+  // Last fields the autosave effect saw, and whether saving was just resumed by
+  // ANOTHER tab. A remote resume is not a local edit and must not write this
+  // tab's (possibly stale or empty) fields over the other tab's draft.
+  const lastFieldsKey = useRef<string | null>(null);
+  const remoteResume = useRef(false);
+  const savingRef = useRef(false);
   const persistedKey = useRef<string | null>(initial ? fieldsKey(initial) : null);
 
   const [category, setCategory] = useState<ItemCategory | "">(initial?.category ?? "");
@@ -212,9 +218,19 @@ export default function App() {
       ? "ready"
       : "describe";
 
+  savingRef.current = savingEnabled;
+
   useEffect(() => {
-    if (!savingEnabled) return;
     const fields = { ...draftInput, conciergeNote };
+    const currentKey = fieldsKey(fields);
+    const fieldsChanged = currentKey !== lastFieldsKey.current;
+    lastFieldsKey.current = currentKey;
+    if (!savingEnabled) return;
+    if (remoteResume.current && !fieldsChanged) {
+      remoteResume.current = false;
+      return;
+    }
+    remoteResume.current = false;
     if (isDraftEmpty(fields)) {
       // Emptied fields must not leave an older copy behind.
       if (persistedKey.current !== null) {
@@ -249,7 +265,9 @@ export default function App() {
   useEffect(() => {
     const onStorage = (event: StorageEvent) => {
       if (event.key !== null && event.key !== DRAFT_PAUSE_KEY && event.key !== DRAFT_STORAGE_KEY) return;
-      setSavingEnabled(!isSavingPaused());
+      const nowEnabled = !isSavingPaused();
+      if (nowEnabled && !savingRef.current) remoteResume.current = true;
+      setSavingEnabled(nowEnabled);
       const stored = peekDraft();
       persistedKey.current = stored ? fieldsKey(stored) : null;
       setSavedDraft(stored);
