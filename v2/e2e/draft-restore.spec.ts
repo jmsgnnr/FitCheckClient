@@ -65,4 +65,15 @@ test.describe("restored drafts and storage failures", () => {
     await page.locator('input[type="file"]').setInputFiles("e2e/fixtures/specimen.png");
     await expect(page.getByLabel("Describe the piece")).toHaveValue("a".repeat(5000));
   });
+
+  test("a paste ending in an emoji at the limit does not crash the marketplace handoff", async ({ page }) => {
+    const errors: string[] = [];
+    page.on("pageerror", (e) => errors.push(e.message));
+    await page.goto("/");
+    await page.locator('input[type="file"]').setInputFiles("e2e/fixtures/specimen.png");
+    await page.getByLabel("Item focus").selectOption("Jacket");
+    await page.getByLabel("Describe the piece").fill("a".repeat(4999) + "\u{1F600}");
+    await expect(page.getByRole("link", { name: "Search eBay" })).toHaveAttribute("href", /ebay\.com/);
+    expect(errors).toEqual([]);
+  });
 });

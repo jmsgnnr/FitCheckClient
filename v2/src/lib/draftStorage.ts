@@ -1,3 +1,4 @@
+import { clampText, stripLoneSurrogates } from "./textLimit";
 import {
   DRAFT_MAX_TEXT_LENGTH,
   DRAFT_STORAGE_KEY,
@@ -48,13 +49,14 @@ export function validateDraft(value: unknown, now: number = Date.now()): Persist
   if (savedMs > now + 24 * 60 * 60 * 1000 || now - savedMs > DRAFT_TTL_MS) return null;
   return {
     category: category as ItemCategory | "",
-    description,
-    size,
+    // Repair (not reject) unpaired surrogates from older or hand-edited drafts.
+    description: stripLoneSurrogates(description),
+    size: stripLoneSurrogates(size),
     condition: condition as ItemCondition,
     region: region as ShipRegion,
     budgetUsd: budgetUsd as number | null,
     savedAt,
-    conciergeNote,
+    conciergeNote: stripLoneSurrogates(conciergeNote),
   };
 }
 
@@ -83,9 +85,9 @@ export function saveDraft(draft: PersistedDraft): boolean {
   // discard, so the app can never persist a draft its own loader rejects.
   const clamped: PersistedDraft = {
     ...draft,
-    description: draft.description.slice(0, DRAFT_MAX_TEXT_LENGTH),
-    size: draft.size.slice(0, DRAFT_MAX_TEXT_LENGTH),
-    conciergeNote: draft.conciergeNote.slice(0, DRAFT_MAX_TEXT_LENGTH),
+    description: clampText(draft.description, DRAFT_MAX_TEXT_LENGTH),
+    size: clampText(draft.size, DRAFT_MAX_TEXT_LENGTH),
+    conciergeNote: clampText(draft.conciergeNote, DRAFT_MAX_TEXT_LENGTH),
   };
   if (validateDraft(clamped) === null) return false;
   try {
