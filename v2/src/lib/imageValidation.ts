@@ -1,5 +1,8 @@
 import { ALLOWED_IMAGE_MIME, MAX_IMAGE_BYTES } from "./constants";
 
+export const IMAGE_DECODE_ERROR =
+  "We couldn't display that image. It may be damaged or cut off. Try another photo.";
+
 export type ImageValidationResult =
   | { ok: true }
   | { ok: false; message: string };
@@ -52,4 +55,54 @@ export async function validateImageContent(file: File): Promise<ImageValidationR
   return valid
     ? { ok: true }
     : { ok: false, message: "This file doesn't contain a valid JPG, PNG, or WEBP image. Try another photo." };
+}
+
+async function readBytes(blob: Blob): Promise<Uint8Array> {
+  if (typeof blob.arrayBuffer === "function") return new Uint8Array(await blob.arrayBuffer());
+  return new Promise<Uint8Array>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(new Uint8Array(reader.result as ArrayBuffer));
+    reader.onerror = () => reject(reader.error);
+    reader.readAsArrayBuffer(blob);
+  });
+}
+
+const PNG_IEND = [0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4e, 0x44, 0xae, 0x42, 0x60, 0x82];
+
+/**
+ * Structural end-of-file check. Browsers happily paint a truncated PNG/JPEG/WEBP
+ * as a partial picture (load events still fire), so decode success alone cannot
+ * tell a cut-off upload from a good one. Run after validateImageContent.
+ */
+export async function validateImageCompleteness(file: File): Promise<ImageValidationResult> {
+  const incomplete: ImageValidationResult = {
+    ok: false,
+    message: "This image looks cut off or damaged. Try exporting it again or pick another photo.",
+  };
+  try {
+    if (file.type === "image/png") {
+      const tail = await readBytes(file.slice(Math.max(0, file.size - PNG_IEND.length)));
+      return tail.length === PNG_IEND.length && PNG_IEND.every((byte, i) => tail[i] === byte)
+        ? { ok: true }
+        : incomplete;
+    }
+    if (file.type === "image/jpeg") {
+      // EOI (FFD9) may be followed by padding or vendor trailers (e.g. motion-photo data),
+      // so search a 64 KiB tail window. FF is byte-stuffed inside entropy-coded scans.
+      const tail = await readBytes(file.slice(Math.max(0, file.size - 65536)));
+      for (let i = tail.length - 2; i >= 0; i -= 1) {
+        if (tail[i] === 0xff && tail[i + 1] === 0xd9) return { ok: true };
+      }
+      return incomplete;
+    }
+    if (file.type === "image/webp") {
+      const head = await readBytes(file.slice(0, 8));
+      if (head.length < 8) return incomplete;
+      const declared = (head[4] | (head[5] << 8) | (head[6] << 16) | (head[7] << 24)) >>> 0;
+      return file.size >= declared + 8 ? { ok: true } : incomplete;
+    }
+  } catch {
+    return { ok: false, message: "We couldn't read that file. Try another image." };
+  }
+  return incomplete;
 }

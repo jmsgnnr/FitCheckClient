@@ -45,9 +45,15 @@ textarea {
   font: inherit;
 }
 
+/*
+ * Two-tone focus ring so it clears 3:1 on both the dark page (paper halo,
+ * ~15:1 vs ink) and the light paper/form surfaces (ink outline, ~15:1 vs
+ * paper). Chartreuse alone was ~1.05:1 on paper.
+ */
 :focus-visible {
-  outline: 3px solid var(--chartreuse);
+  outline: 3px solid var(--ink);
   outline-offset: 2px;
+  box-shadow: 0 0 0 2px var(--paper);
 }
 
 @media (prefers-reduced-motion: reduce) {

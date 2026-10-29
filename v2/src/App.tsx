@@ -21,7 +21,8 @@ import {
   loadDraft,
   saveDraft,
 } from "./lib/draftStorage";
-import { validateImageContent } from "./lib/imageValidation";
+import { canDecodeImage } from "./lib/imageDecode";
+import { IMAGE_DECODE_ERROR, validateImageCompleteness, validateImageContent } from "./lib/imageValidation";
 import { buildMarketplaceSearchUrl } from "./lib/marketplaceUrls";
 import {
   ITEM_CATEGORIES,
@@ -155,24 +156,20 @@ export default function App() {
     async (file: File | undefined) => {
       if (!file) return;
       const request = ++imageRequestId.current;
-      const validation = await validateImageContent(file);
+      let validation = await validateImageContent(file);
+      if (validation.ok) validation = await validateImageCompleteness(file);
       if (request !== imageRequestId.current) return;
       if (!validation.ok) {
         setImageError(validation.message);
         return;
       }
-      try {
-        if (typeof createImageBitmap === "function") {
-          const decoded = await createImageBitmap(file);
-          decoded.close();
-        }
-      } catch {
-        if (request === imageRequestId.current) {
-          setImageError("We couldn't display that image. Try another photo.");
-        }
+      const decoded = await canDecodeImage(file);
+      if (request !== imageRequestId.current) return;
+      if (!decoded.ok) {
+        // Keep any prior valid preview; only report the failure.
+        setImageError(IMAGE_DECODE_ERROR);
         return;
       }
-      if (request !== imageRequestId.current) return;
       setImageError(null);
       setPreviewUrl((previous) => {
         revokePreview(previous);
@@ -206,6 +203,15 @@ export default function App() {
   const onDrop = (event: DragEvent) => {
     event.preventDefault();
     applyImageFile(event.dataTransfer.files?.[0]);
+  };
+
+  const onPreviewError = () => {
+    // Defense in depth: the file passed a decode check, but the browser still
+    // failed to paint it. Drop the unusable preview and say so.
+    imageRequestId.current += 1;
+    revokePreview(previewUrl);
+    setPreviewUrl(null);
+    setImageError(IMAGE_DECODE_ERROR);
   };
 
   const removePhoto = () => {
@@ -356,7 +362,11 @@ export default function App() {
             </>
           ) : (
             <div className="preview-wrap">
-              <img src={previewUrl} alt="Your uploaded garment preview" />
+              <img
+                src={previewUrl}
+                alt="Your uploaded garment preview"
+                onError={onPreviewError}
+              />
             </div>
           )}
           <input
