@@ -84,4 +84,24 @@ test.describe("durable draft deletion without a photo", () => {
     const o = await page.evaluate(() => ({ s: document.documentElement.scrollWidth, v: document.documentElement.clientWidth }));
     expect(o.s).toBeLessThanOrEqual(o.v + 1);
   });
+
+  test("deleting in one tab stops another tab from recreating the draft", async ({ context }) => {
+    const draft = JSON.stringify(seed());
+    const a = await context.newPage();
+    await a.addInitScript(([key, value]) => {
+      if (!localStorage.getItem(key) && !localStorage.getItem("fitcheck-v2-search-draft-paused-v1")) localStorage.setItem(key, value);
+    }, [KEY, draft]);
+    await a.goto("/");
+    const b = await context.newPage();
+    await b.goto("/");
+    await expect(b.getByTestId("saved-fields")).toBeVisible();
+
+    await a.getByRole("button", { name: /delete saved fields/i }).click();
+    // Tab B syncs through the storage event without reloading.
+    await expect(b.getByRole("button", { name: /turn saving back on/i })).toBeVisible();
+    await b.getByRole("button", { name: /prepare sourcing brief/i }).click();
+    await b.getByLabel("What makes this hunt hard?").fill("edit in the other tab");
+    await expect(b.getByLabel("Sourcing brief preview")).toContainText("edit in the other tab");
+    expect(await b.evaluate((k) => localStorage.getItem(k), KEY)).toBeNull();
+  });
 });
