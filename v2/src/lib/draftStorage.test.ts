@@ -5,6 +5,7 @@ import {
   isDraftEmpty,
   isSavingPaused,
   loadDraft,
+  peekDraft,
   saveDraft,
   setSavingPaused,
 } from "./draftStorage";
@@ -268,5 +269,29 @@ describe("saving preference and emptiness", () => {
     saveDraft({ category: "Coat", description: "x", size: "", condition: "either", region: "US", budgetUsd: null, conciergeNote: "n", savedAt: new Date().toISOString() });
     expect(clearDraft()).toBe(true);
     expect(loadDraft()).toBeNull();
+  });
+});
+
+describe("cross-tab pause enforcement", () => {
+  beforeEach(() => localStorage.clear());
+  const d = {
+    category: "Coat" as const, description: "x", size: "", condition: "either" as const,
+    region: "US" as const, budgetUsd: null, conciergeNote: "n", savedAt: new Date().toISOString(),
+  };
+
+  it("saveDraft is a no-op once another tab has set the pause flag", () => {
+    expect(saveDraft(d)).toBe(true);
+    clearDraft();
+    localStorage.setItem(DRAFT_PAUSE_KEY, "1"); // as written by another tab
+    expect(saveDraft(d)).toBe(false);
+    expect(localStorage.getItem(DRAFT_STORAGE_KEY)).toBeNull();
+    setSavingPaused(false);
+    expect(saveDraft(d)).toBe(true);
+  });
+
+  it("peekDraft reads without modifying storage", () => {
+    localStorage.setItem(DRAFT_STORAGE_KEY, "{bad");
+    expect(peekDraft()).toBeNull();
+    expect(localStorage.getItem(DRAFT_STORAGE_KEY)).toBe("{bad");
   });
 });

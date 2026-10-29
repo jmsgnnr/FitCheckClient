@@ -21,6 +21,7 @@ import {
   isDraftEmpty,
   isSavingPaused,
   loadDraft,
+  peekDraft,
   saveDraft,
   setSavingPaused,
   type PersistedDraft,
@@ -30,6 +31,8 @@ import { validateImageContent } from "./lib/imageValidation";
 import { buildMarketplaceSearchUrl } from "./lib/marketplaceUrls";
 import {
   DRAFT_MAX_TEXT_LENGTH,
+  DRAFT_PAUSE_KEY,
+  DRAFT_STORAGE_KEY,
   DRAFT_TTL_DAYS,
   ITEM_CATEGORIES,
   type ItemCategory,
@@ -185,10 +188,28 @@ export default function App() {
       persistedKey.current = key;
       setSavedDraft(draft);
       setStorageWarning(null);
+    } else if (isSavingPaused()) {
+      // Another tab turned saving off after this tab last looked.
+      setSavingEnabled(false);
+      setSavedDraft(null);
+      persistedKey.current = null;
     } else {
       setStorageWarning(STORAGE_UNAVAILABLE_MESSAGE);
     }
   }, [draftInput, conciergeNote, savingEnabled]);
+
+  // Keep this tab in step with deletions and pause changes made in other tabs.
+  useEffect(() => {
+    const onStorage = (event: StorageEvent) => {
+      if (event.key !== null && event.key !== DRAFT_PAUSE_KEY && event.key !== DRAFT_STORAGE_KEY) return;
+      setSavingEnabled(!isSavingPaused());
+      const stored = peekDraft();
+      persistedKey.current = stored ? fieldsKey(stored) : null;
+      setSavedDraft(stored);
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, []);
 
   const revokePreview = useCallback((url: string | null) => {
     if (url) URL.revokeObjectURL(url);

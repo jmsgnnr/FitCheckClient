@@ -61,6 +61,16 @@ export function validateDraft(value: unknown, now: number = Date.now()): Persist
   };
 }
 
+/** Read-only view of the stored draft (no cleanup writes). Never throws. */
+export function peekDraft(now: number = Date.now()): PersistedDraft | null {
+  try {
+    const raw = localStorage.getItem(DRAFT_STORAGE_KEY);
+    return raw ? validateDraft(JSON.parse(raw), now) : null;
+  } catch {
+    return null;
+  }
+}
+
 /** Never throws. Invalid, corrupted or expired drafts are removed best-effort. */
 export function loadDraft(now: number = Date.now()): PersistedDraft | null {
   let raw: string | null;
@@ -86,7 +96,7 @@ export function loadDraft(now: number = Date.now()): PersistedDraft | null {
   return draft;
 }
 
-/** Returns true only if the draft was actually written. Never throws. */
+/** Returns true only if the draft was actually written (false when paused or blocked). Never throws. */
 export function saveDraft(draft: PersistedDraft): boolean {
   // Clamp to the same limits restore enforces, and refuse anything restore would
   // discard, so the app can never persist a draft its own loader rejects.
@@ -97,6 +107,8 @@ export function saveDraft(draft: PersistedDraft): boolean {
     conciergeNote: clampText(draft.conciergeNote, DRAFT_MAX_TEXT_LENGTH),
   };
   if (validateDraft(clamped) === null) return false;
+  // Enforced here, on every write, so a pause set by another tab is honored too.
+  if (isSavingPaused()) return false;
   try {
     localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(clamped));
     return true;
