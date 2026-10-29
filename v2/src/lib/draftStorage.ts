@@ -1,6 +1,7 @@
 import { clampText, stripLoneSurrogates } from "./textLimit";
 import {
   DRAFT_MAX_TEXT_LENGTH,
+  DRAFT_PAUSE_KEY,
   DRAFT_STORAGE_KEY,
   DRAFT_TTL_MS,
   ITEM_CATEGORIES,
@@ -60,6 +61,16 @@ export function validateDraft(value: unknown, now: number = Date.now()): Persist
   };
 }
 
+/** Read-only view of the stored draft (no cleanup writes). Never throws. */
+export function peekDraft(now: number = Date.now()): PersistedDraft | null {
+  try {
+    const raw = localStorage.getItem(DRAFT_STORAGE_KEY);
+    return raw ? validateDraft(JSON.parse(raw), now) : null;
+  } catch {
+    return null;
+  }
+}
+
 /** Never throws. Invalid, corrupted or expired drafts are removed best-effort. */
 export function loadDraft(now: number = Date.now()): PersistedDraft | null {
   let raw: string | null;
@@ -70,16 +81,22 @@ export function loadDraft(now: number = Date.now()): PersistedDraft | null {
   }
   if (!raw) return null;
   let draft: PersistedDraft | null = null;
+  let hasExtraKeys = false;
   try {
-    draft = validateDraft(JSON.parse(raw), now);
+    const parsed: unknown = JSON.parse(raw);
+    draft = validateDraft(parsed, now);
+    hasExtraKeys = draft !== null && isRecord(parsed) &&
+      Object.keys(parsed).some((key) => !(key in draft!));
   } catch {
     draft = null;
   }
   if (!draft) clearDraft();
+  // Scrub legacy extras (for example an old contact email) without touching savedAt.
+  else if (hasExtraKeys) saveDraft(draft);
   return draft;
 }
 
-/** Returns true only if the draft was actually written. Never throws. */
+/** Returns true only if the draft was actually written (false when paused or blocked). Never throws. */
 export function saveDraft(draft: PersistedDraft): boolean {
   // Clamp to the same limits restore enforces, and refuse anything restore would
   // discard, so the app can never persist a draft its own loader rejects.
@@ -90,6 +107,8 @@ export function saveDraft(draft: PersistedDraft): boolean {
     conciergeNote: clampText(draft.conciergeNote, DRAFT_MAX_TEXT_LENGTH),
   };
   if (validateDraft(clamped) === null) return false;
+  // Enforced here, on every write, so a pause set by another tab is honored too.
+  if (isSavingPaused()) return false;
   try {
     localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(clamped));
     return true;
@@ -106,6 +125,35 @@ export function clearDraft(): boolean {
   } catch {
     return false;
   }
+}
+
+/**
+ * Whether the shopper deliberately turned saving off (for example by deleting
+ * the saved fields). The marker is a bare flag; it holds no shopper data.
+ */
+export function isSavingPaused(): boolean {
+  try {
+    return localStorage.getItem(DRAFT_PAUSE_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+/** Returns true only if the preference was stored. Never throws. */
+export function setSavingPaused(paused: boolean): boolean {
+  try {
+    if (paused) localStorage.setItem(DRAFT_PAUSE_KEY, "1");
+    else localStorage.removeItem(DRAFT_PAUSE_KEY);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** A draft with no shopper-entered content is not worth persisting. */
+export function isDraftEmpty(d: Omit<PersistedDraft, "savedAt">): boolean {
+  return d.category === "" && d.description === "" && d.size === "" &&
+    d.conciergeNote === "" && d.budgetUsd === null;
 }
 
 export function buildConciergeBrief(
