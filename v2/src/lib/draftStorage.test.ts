@@ -12,6 +12,17 @@ import {
 import { DRAFT_MAX_TEXT_LENGTH, DRAFT_PAUSE_KEY, DRAFT_STORAGE_KEY, DRAFT_TTL_MS } from "./constants";
 import { buildSearchPhrase } from "./searchPhrase";
 
+// Freeze the clock for the whole file: fixtures use fixed dates and saveDraft/loadDraft
+// validate against Date.now(), so a real clock would make these tests expire over time.
+const NOW = Date.parse("2026-10-29T12:00:00.000Z");
+beforeEach(() => {
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(NOW);
+});
+afterEach(() => {
+  vi.useRealTimers();
+});
+
 describe("draftStorage", () => {
   beforeEach(() => {
     localStorage.clear();
@@ -25,7 +36,7 @@ describe("draftStorage", () => {
       condition: "either",
       region: "US",
       budgetUsd: null,
-      savedAt: new Date().toISOString(),
+      savedAt: new Date(NOW).toISOString(),
       conciergeNote: "",
     });
     const raw = localStorage.getItem(DRAFT_STORAGE_KEY) ?? "";
@@ -69,7 +80,6 @@ describe("contact persistence", () => {
 });
 
 describe("restored draft validation", () => {
-  const NOW = Date.parse("2026-10-29T12:00:00.000Z");
   const good = {
     category: "Jacket", description: "tan chore coat", size: "L", condition: "used", region: "MX",
     budgetUsd: 95, conciergeNote: "wide collar", savedAt: "2026-10-28T12:00:00.000Z",
@@ -149,7 +159,7 @@ describe("restored draft validation", () => {
 describe("storage failures", () => {
   const draft = {
     category: "Dress" as const, description: "floral", size: "", condition: "either" as const,
-    region: "US" as const, budgetUsd: null, savedAt: new Date().toISOString(), conciergeNote: "",
+    region: "US" as const, budgetUsd: null, savedAt: new Date(NOW).toISOString(), conciergeNote: "",
   };
   afterEach(() => vi.restoreAllMocks());
 
@@ -193,7 +203,7 @@ describe("save/restore limits agree", () => {
   beforeEach(() => localStorage.clear());
   const base = {
     category: "Coat" as const, description: "x", size: "", condition: "either" as const,
-    region: "US" as const, budgetUsd: null, conciergeNote: "", savedAt: new Date().toISOString(),
+    region: "US" as const, budgetUsd: null, conciergeNote: "", savedAt: new Date(NOW).toISOString(),
   };
 
   it("clamps oversize text on save so the saved draft restores intact", () => {
@@ -220,7 +230,7 @@ describe("surrogate safety", () => {
   beforeEach(() => localStorage.clear());
   const d = {
     category: "Coat" as const, description: "x", size: "", condition: "either" as const,
-    region: "US" as const, budgetUsd: null, conciergeNote: "", savedAt: new Date().toISOString(),
+    region: "US" as const, budgetUsd: null, conciergeNote: "", savedAt: new Date(NOW).toISOString(),
   };
 
   it("saveDraft never persists a split surrogate pair", () => {
@@ -266,7 +276,7 @@ describe("saving preference and emptiness", () => {
   });
 
   it("deleted drafts stay deleted through load", () => {
-    saveDraft({ category: "Coat", description: "x", size: "", condition: "either", region: "US", budgetUsd: null, conciergeNote: "n", savedAt: new Date().toISOString() });
+    saveDraft({ category: "Coat", description: "x", size: "", condition: "either", region: "US", budgetUsd: null, conciergeNote: "n", savedAt: new Date(NOW).toISOString() });
     expect(clearDraft()).toBe(true);
     expect(loadDraft()).toBeNull();
   });
@@ -276,7 +286,7 @@ describe("cross-tab pause enforcement", () => {
   beforeEach(() => localStorage.clear());
   const d = {
     category: "Coat" as const, description: "x", size: "", condition: "either" as const,
-    region: "US" as const, budgetUsd: null, conciergeNote: "n", savedAt: new Date().toISOString(),
+    region: "US" as const, budgetUsd: null, conciergeNote: "n", savedAt: new Date(NOW).toISOString(),
   };
 
   it("saveDraft is a no-op once another tab has set the pause flag", () => {
