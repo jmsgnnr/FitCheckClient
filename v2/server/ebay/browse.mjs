@@ -1,8 +1,10 @@
 import { CatalogError, ProviderResponseError } from "../catalog/errors.mjs";
 import { rankListings } from "../catalog/pricing.mjs";
+import { raceAbort, readBoundedText } from "./bounded.mjs";
 import {
-  DEFAULT_TIMEOUT_MS,
+  MAX_PROVIDER_BODY_BYTES,
   marketplaceIdForRegion,
+  OVERALL_DEADLINE_MS,
   MAX_QUERY_LENGTH,
   MAX_RESULT_LIMIT,
   resolveEbayConfig,
@@ -50,6 +52,7 @@ export class EbayBrowseAdapter {
    * @param {{ fetchImpl?: typeof fetch, env?: NodeJS.ProcessEnv, config?: ReturnType<typeof resolveEbayConfig> }} [options]
    */
   constructor(options = {}) {
+    this.deadlineMs = options.deadlineMs ?? OVERALL_DEADLINE_MS;
     this.fetchImpl = options.fetchImpl ?? globalThis.fetch;
     this.env = options.env ?? process.env;
     this.config = options.config ?? resolveEbayConfig(this.env);
@@ -102,27 +105,45 @@ export class EbayBrowseAdapter {
       });
     }
 
-    const token = await this.getAccessToken(apiOrigin, clientId, clientSecret);
-    const url = buildBrowseSearchUrl(
-      { ...params, query },
-      apiOrigin,
-    );
-
+    // One deadline covers OAuth, the Browse request, and both body reads.
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT_MS);
-    let response;
+    const timer = setTimeout(() => controller.abort(), this.deadlineMs);
+    let payload;
+    let url;
     try {
-      response = await this.fetchImpl(url, {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "X-EBAY-C-MARKETPLACE-ID": marketplaceId,
-          Accept: "application/json",
-        },
+      const token = await this.getAccessToken(apiOrigin, clientId, clientSecret, controller.signal);
+      url = buildBrowseSearchUrl({ ...params, query }, apiOrigin);
+      const response = await raceAbort(
+        this.fetchImpl(url, {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "X-EBAY-C-MARKETPLACE-ID": marketplaceId,
+            Accept: "application/json",
+          },
+          signal: controller.signal,
+        }),
+        controller.signal,
+      );
+      if (!response.ok) {
+        await response.body?.cancel?.().catch(() => {});
+        throw new ProviderResponseError("eBay Browse search failed", {
+          httpStatus: response.status,
+        });
+      }
+      const text = await readBoundedText(response, {
+        maxBytes: MAX_PROVIDER_BODY_BYTES,
         signal: controller.signal,
       });
+      try {
+        payload = JSON.parse(text);
+      } catch {
+        throw new CatalogError("browse_malformed", "Invalid JSON from eBay", {
+          status: "error",
+        });
+      }
     } catch (error) {
-      if (error?.name === "AbortError") {
+      if (error?.name === "AbortError" || error?.code === "deadline_exceeded") {
         throw new CatalogError("browse_timeout", "Browse search timed out", {
           status: "error",
         });
@@ -130,21 +151,6 @@ export class EbayBrowseAdapter {
       throw error;
     } finally {
       clearTimeout(timer);
-    }
-
-    if (!response.ok) {
-      throw new ProviderResponseError("eBay Browse search failed", {
-        httpStatus: response.status,
-      });
-    }
-
-    let payload;
-    try {
-      payload = await response.json();
-    } catch {
-      throw new CatalogError("browse_malformed", "Invalid JSON from eBay", {
-        status: "error",
-      });
     }
 
     const checkedAt = new Date().toISOString();
@@ -161,7 +167,7 @@ export class EbayBrowseAdapter {
     };
   }
 
-  async getAccessToken(apiOrigin, clientId, clientSecret) {
+  async getAccessToken(apiOrigin, clientId, clientSecret, signal) {
     if (this.cachedToken && this.cachedToken.expiresAt > Date.now() + 30_000) {
       return this.cachedToken.accessToken;
     }
@@ -170,6 +176,8 @@ export class EbayBrowseAdapter {
       clientId,
       clientSecret,
       this.fetchImpl,
+      undefined,
+      signal,
     );
     this.cachedToken = next;
     return next.accessToken;

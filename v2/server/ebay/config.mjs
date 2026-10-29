@@ -83,4 +83,15 @@ export function marketplaceIdForRegion(region) {
 export const EBAY_OAUTH_SCOPE = "https://api.ebay.com/oauth/api_scope";
 export const MAX_QUERY_LENGTH = 120;
 export const MAX_RESULT_LIMIT = 25;
-export const DEFAULT_TIMEOUT_MS = 12_000;
+/**
+ * One overall deadline for a whole keyword search: OAuth token, Browse request,
+ * and reading both response bodies. There are no automatic retries, so this is
+ * also the worst-case provider time for one shopper click. The browser's
+ * request timeout (src/lib/catalogClient.ts) must stay above this value.
+ */
+export const OVERALL_DEADLINE_MS = 12_000;
+/** @deprecated kept as an alias; use OVERALL_DEADLINE_MS. */
+export const DEFAULT_TIMEOUT_MS = OVERALL_DEADLINE_MS;
+/** Hard cap on any provider response body we will buffer. */
+export const MAX_PROVIDER_BODY_BYTES = 1_000_000;
+export const MAX_TOKEN_BODY_BYTES = 64_000;

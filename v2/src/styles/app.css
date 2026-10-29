@@ -431,3 +431,50 @@
 .site-footer p {
   margin: 0.35rem 0;
 }
+
+.constraint-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.5rem;
+  margin: 0 0 0.5rem;
+  font-size: 0.88rem;
+}
+
+.constraint-list div {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.constraint-list dt {
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #49413b;
+}
+
+.constraint-list dd {
+  margin: 0;
+  font-weight: 700;
+}
+
+.budget-flag {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #3a3632;
+}
+
+.budget-flag.is-over {
+  color: #8a1239;
+}
+
+.over-budget-heading {
+  margin: 1.25rem 0 0.25rem;
+  font: 900 0.9rem "Arial Black", Impact, sans-serif;
+  text-transform: uppercase;
+}
+
+.listing-list.is-over-budget li {
+  border-left-color: var(--charcoal);
+  opacity: 0.85;
+}

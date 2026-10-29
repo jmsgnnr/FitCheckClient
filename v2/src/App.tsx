@@ -10,7 +10,9 @@ import {
 import { PLANNED_ADAPTERS } from "./lib/adapters";
 import {
   checkLocalCatalog,
+  isLocalCatalogSupported,
   searchLocalCatalog,
+  type CatalogListing,
   type CatalogResults,
   type LocalCatalogStatus,
 } from "./lib/catalogClient";
@@ -30,9 +32,44 @@ import {
   type ShipRegion,
 } from "./lib/constants";
 import { buildSearchPhrase, isSearchReady } from "./lib/searchPhrase";
+import {
+  type BudgetFit,
+  budgetFitLabel,
+  classifyBudgetFit,
+  describeConstraints,
+  isOverBudget,
+} from "./lib/shoppingConstraints";
 import "./styles/app.css";
 
 type ActiveStep = "photo" | "describe" | "ready";
+
+function ListingCard({
+  item,
+  fit,
+  budgetUsd,
+  destination,
+}: {
+  item: CatalogListing;
+  fit: BudgetFit;
+  budgetUsd: number | null;
+  destination: string;
+}) {
+  return (
+    <li>
+      <strong>{item.title}</strong>
+      <p>{item.price.currency} {item.price.amount.toFixed(2)} asking · {item.shipping === null
+        ? "Shipping unknown"
+        : item.shipping.currency === item.price.currency
+          ? `Shipping ${item.shipping.currency} ${item.shipping.amount.toFixed(2)}`
+          : "Shipping currency differs; total unknown"}</p>
+      {fit.kind !== "no_budget" && (
+        <p className={`budget-flag ${isOverBudget(fit) ? "is-over" : ""}`}>{budgetFitLabel(fit, budgetUsd)}</p>
+      )}
+      <p className="catalog-helper">Condition: {item.condition} · Size: {item.sizeText || "unverified"} · Checked: {item.checkedAt.slice(0, 10)} · Availability unverified · Ships to {destination}: unverified</p>
+      <a href={item.merchantUrl} target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer">View original eBay listing</a>
+    </li>
+  );
+}
 
 export default function App() {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -82,8 +119,17 @@ export default function App() {
   const searchReady = isSearchReady(draftInput);
   const catalogKey = JSON.stringify([searchPhrase, region]);
   const shownCatalog = catalogResult?.key === catalogKey ? catalogResult.data : null;
-  const canSearchCatalog = searchReady && catalogStatus?.kind === "available" &&
+  const localCatalogSupported = isLocalCatalogSupported();
+  const constraints = describeConstraints(draftInput);
+  const canSearchCatalog = localCatalogSupported && searchReady && catalogStatus?.kind === "available" &&
     catalogStatus.supportedRegions.includes(region) && searchPhrase.length <= 120 && !catalogSearching;
+
+  const classifiedListings = (shownCatalog?.listings ?? []).map((item) => ({
+    item,
+    fit: classifyBudgetFit(item.price, item.shipping, budgetUsd),
+  }));
+  const withinBudget = classifiedListings.filter(({ fit }) => !isOverBudget(fit));
+  const overBudget = classifiedListings.filter(({ fit }) => isOverBudget(fit));
 
   const checkCatalogConnection = async () => {
     const requestId = ++catalogRequestId.current;
@@ -506,6 +552,22 @@ export default function App() {
               ? searchPhrase
               : "Add an item type and a short description to unlock handoff links."}
           </p>
+          <dl className="constraint-list" aria-label="Shopping constraints, not applied by search">
+            <div>
+              <dt>Ship to</dt>
+              <dd>{constraints.destination}</dd>
+            </div>
+            <div>
+              <dt>Max budget</dt>
+              <dd>{constraints.budget ?? "None set"}</dd>
+            </div>
+          </dl>
+          <p className="catalog-helper">
+            The phrase above is text keywords only. Destination and budget are
+            your notes, not search filters: neither FitCheck nor the marketplace
+            links verify them. Set shipping location and price limits on the
+            marketplace page yourself.
+          </p>
           <div className="action-row">
             <button
               type="button"
@@ -559,17 +621,25 @@ export default function App() {
             ? "This does not verify any photo match or guarantee an item is still available. Only your explicit search checks local catalog results."
             : "The optional eBay adapter is off by default. Marketplace links above are user-initiated handoffs, not results from FitCheck."}
         </p>
-        <div className="action-row">
-          <button type="button" className="btn btn-ghost" onClick={checkCatalogConnection} disabled={catalogChecking || catalogSearching}>
-            {catalogChecking ? "Checking local catalog..." : "Check local catalog"}
-          </button>
-          {canSearchCatalog && (
-            <button type="button" className="btn btn-secondary" onClick={searchConnectedCatalog}>
-              Search connected listings
-            </button>
-          )}
-        </div>
-        <p className="catalog-helper">Optional check contacts only 127.0.0.1 on this device. No photo or search text is sent by checking status. Searches run only when you click Search connected listings.</p>
+        {localCatalogSupported ? (
+          <>
+            <div className="action-row">
+              <button type="button" className="btn btn-ghost" onClick={checkCatalogConnection} disabled={catalogChecking || catalogSearching}>
+                {catalogChecking ? "Checking local catalog..." : "Check local catalog"}
+              </button>
+              {canSearchCatalog && (
+                <button type="button" className="btn btn-secondary" onClick={searchConnectedCatalog}>
+                  Search connected listings
+                </button>
+              )}
+            </div>
+            <p className="catalog-helper">Developer build only. The check contacts only 127.0.0.1 on this device and sends nothing about you. A search sends only your typed keywords (item type, description, size, condition) to that local server. Your photo, destination and budget are never sent, and neither is applied as a search filter. Searches run only when you click Search connected listings.</p>
+          </>
+        ) : (
+          <p className="catalog-helper" role="status">
+            Local catalog search is a developer-only feature and is not available on this site. Nothing here contacts your computer or any catalog. Use the marketplace links above; they are keyword searches you run yourself, and your photo is never sent anywhere.
+          </p>
+        )}
         {catalogConnectionError && <p role="status">Local catalog unavailable. Marketplace links remain available.</p>}
         {catalogStatus?.kind === "disabled" && <p role="status">Local provider is disabled or awaiting approval; no live request was made.</p>}
         {catalogStatus?.kind === "available" && !catalogStatus.supportedRegions.includes(region) && (
@@ -583,24 +653,30 @@ export default function App() {
         {shownCatalog && (
           <div className="catalog-results" aria-live="polite">
             <h3>Keyword listings from eBay · not photo-matched</h3>
-            <p className="catalog-helper">These are seller-provided listing prices, not verified lowest delivered prices. Availability and tax may be unknown.</p>
+            <p className="catalog-helper">These are seller-provided asking prices, not verified lowest delivered prices. Availability, tax, and whether a seller ships to {constraints.destination} are unverified. Results are in eBay&apos;s order, not ranked by price.</p>
             {shownCatalog.listings.length === 0 ? (
               <p>No supported items returned for this keyword search.</p>
             ) : (
-              <ul className="listing-list">
-                {shownCatalog.listings.map((item) => (
-                  <li key={item.listingId}>
-                    <strong>{item.title}</strong>
-                    <p>{item.price.currency} {item.price.amount.toFixed(2)} · {item.shipping === null
-                      ? "Shipping unknown"
-                      : item.shipping.currency === item.price.currency
-                        ? `Shipping ${item.shipping.currency} ${item.shipping.amount.toFixed(2)}`
-                        : "Shipping currency differs; total unknown"}</p>
-                    <p className="catalog-helper">Condition: {item.condition} · Size: {item.sizeText || "unverified"} · Checked: {item.checkedAt.slice(0, 10)} · Availability unverified</p>
-                    <a href={item.merchantUrl} target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer">View original eBay listing</a>
-                  </li>
-                ))}
-              </ul>
+              <>
+                {withinBudget.length > 0 && (
+                  <ul className="listing-list">
+                    {withinBudget.map(({ item, fit }) => (
+                      <ListingCard key={item.listingId} item={item} fit={fit} budgetUsd={budgetUsd} destination={constraints.destination} />
+                    ))}
+                  </ul>
+                )}
+                {overBudget.length > 0 && (
+                  <>
+                    <h4 className="over-budget-heading">Over your budget ({overBudget.length})</h4>
+                    <p className="catalog-helper">These listings exceed your ${budgetUsd} cap on the amounts the seller lists. They are shown for transparency only.</p>
+                    <ul className="listing-list is-over-budget">
+                      {overBudget.map(({ item, fit }) => (
+                        <ListingCard key={item.listingId} item={item} fit={fit} budgetUsd={budgetUsd} destination={constraints.destination} />
+                      ))}
+                    </ul>
+                  </>
+                )}
+              </>
             )}
           </div>
         )}
