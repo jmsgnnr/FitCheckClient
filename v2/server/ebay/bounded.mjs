@@ -1,6 +1,18 @@
 import { CatalogError } from "../catalog/errors.mjs";
 
 /**
+ * Cancel a stream without ever waiting on it. A stream whose cancel() never
+ * settles (or throws synchronously) must not defeat the overall deadline.
+ *
+ * @param {{ cancel?: () => unknown } | null | undefined} target reader, stream, or response.body
+ */
+export function discardStream(target) {
+  void Promise.resolve()
+    .then(() => target?.cancel?.())
+    .catch(() => {});
+}
+
+/**
  * Read a fetch Response body as text with a hard byte cap that also honors an
  * AbortSignal, even when the (possibly mocked or proxied) stream ignores the
  * signal itself. Rejects with CatalogError codes `body_too_large` or
@@ -13,7 +25,7 @@ import { CatalogError } from "../catalog/errors.mjs";
 export async function readBoundedText(response, { maxBytes, signal }) {
   const declared = Number(response.headers?.get?.("content-length") ?? "0");
   if (Number.isFinite(declared) && declared > maxBytes) {
-    await response.body?.cancel?.().catch(() => {});
+    discardStream(response.body);
     throw new CatalogError("body_too_large", "Provider response too large", { status: "error" });
   }
   if (!response.body) return "";
@@ -40,7 +52,7 @@ export async function readBoundedText(response, { maxBytes, signal }) {
       chunks.push(value);
     }
   } catch (error) {
-    await reader.cancel().catch(() => {});
+    discardStream(reader);
     throw error;
   } finally {
     signal.removeEventListener("abort", onAbort);

@@ -185,3 +185,62 @@ describe("eBay adapter deadlines and body bounds (mocked HTTP, no network)", () 
     assert.ok(result.listings.length > 0);
   });
 });
+
+describe("review fixes: non-settling cancel and abort preservation", () => {
+  it("a stream whose cancel() never settles cannot defeat the deadline (Browse body)", async () => {
+    const stream = new ReadableStream({
+      start(c) { c.enqueue(new TextEncoder().encode("{")); },
+      pull() { return new Promise(() => {}); },
+      cancel() { return new Promise(() => {}); },
+    });
+    const adapter = adapterWith(async (url) => (isTokenUrl(url) ? tokenResponse() : new Response(stream, { status: 200 })));
+    const result = await timed(search(adapter));
+    assert.equal(result.error?.code, "browse_timeout");
+    assert.ok(result.elapsed < 1000, `took ${result.elapsed}ms`);
+  });
+
+  it("non-settling cancel does not delay declared-size rejection or non-ok cleanup", async () => {
+    const hang = () => new ReadableStream({ pull() {}, cancel() { return new Promise(() => {}); } });
+    const big = adapterWith(async (url) => isTokenUrl(url)
+      ? tokenResponse()
+      : new Response(hang(), { status: 200, headers: { "content-length": String(MAX_PROVIDER_BODY_BYTES + 1) } }), 5_000);
+    const r1 = await timed(search(big));
+    assert.equal(r1.error?.code, "body_too_large");
+    assert.ok(r1.elapsed < 500);
+    const bad = adapterWith(async (url) => isTokenUrl(url) ? tokenResponse() : new Response(hang(), { status: 503 }), 5_000);
+    const r2 = await timed(search(bad));
+    assert.equal(r2.error?.code, "provider_response");
+    assert.ok(r2.elapsed < 500);
+  });
+
+  it("OAuth: real HTTP server sends headers and partial JSON then stalls -> oauth_timeout, not oauth_malformed", async () => {
+    const http = await import("node:http");
+    const server = http.createServer((req, res) => {
+      res.writeHead(200, { "content-type": "application/json" });
+      res.write('{"access_token":"abc","expires');
+      // never ends
+    });
+    await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+    const { port } = server.address();
+    try {
+      const adapter = new EbayBrowseAdapter({
+        env: approvedEnv,
+        deadlineMs: 300,
+        fetchImpl: (url, init) =>
+          globalThis.fetch(String(url).replace("https://api.ebay.com", `http://127.0.0.1:${port}`), init),
+      });
+      const result = await timed(search(adapter));
+      assert.equal(result.error?.code, "oauth_timeout");
+      assert.ok(result.elapsed < 1500, `took ${result.elapsed}ms`);
+    } finally {
+      server.closeAllConnections?.();
+      await new Promise((resolve) => server.close(resolve));
+    }
+  });
+
+  it("OAuth: genuinely invalid JSON is still oauth_malformed", async () => {
+    const adapter = adapterWith(async () => new Response("not json", { status: 200 }), 5_000);
+    const result = await timed(search(adapter));
+    assert.equal(result.error?.code, "oauth_malformed");
+  });
+});

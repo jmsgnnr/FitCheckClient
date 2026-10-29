@@ -48,13 +48,16 @@ export async function fetchApplicationAccessToken(
         { status: response.status === 429 ? "rate_limited" : "error" },
       );
     }
+    // Abort/deadline/size errors from the bounded read propagate untouched;
+    // only a JSON.parse failure means a malformed token response.
+    const text = await readBoundedText(response, {
+      maxBytes: MAX_TOKEN_BODY_BYTES,
+      signal: effectiveSignal,
+    });
     let payload;
     try {
-      payload = JSON.parse(
-        await readBoundedText(response, { maxBytes: MAX_TOKEN_BODY_BYTES, signal: effectiveSignal }),
-      );
-    } catch (error) {
-      if (error instanceof CatalogError) throw error;
+      payload = JSON.parse(text);
+    } catch {
       throw new CatalogError("oauth_malformed", "OAuth response was not valid JSON", {
         status: "error",
       });
@@ -71,7 +74,7 @@ export async function fetchApplicationAccessToken(
       expiresAt: Date.now() + expiresIn * 1000,
     };
   } catch (error) {
-    if (error?.name === "AbortError" || error?.code === "deadline_exceeded") {
+    if (error?.name === "AbortError" || error?.code === "deadline_exceeded" || effectiveSignal.aborted) {
       throw new CatalogError("oauth_timeout", "OAuth token request timed out", {
         status: "error",
       });

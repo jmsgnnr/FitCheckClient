@@ -1,6 +1,6 @@
 import { CatalogError, ProviderResponseError } from "../catalog/errors.mjs";
 import { rankListings } from "../catalog/pricing.mjs";
-import { raceAbort, readBoundedText } from "./bounded.mjs";
+import { discardStream, raceAbort, readBoundedText } from "./bounded.mjs";
 import {
   MAX_PROVIDER_BODY_BYTES,
   marketplaceIdForRegion,
@@ -126,7 +126,7 @@ export class EbayBrowseAdapter {
         controller.signal,
       );
       if (!response.ok) {
-        await response.body?.cancel?.().catch(() => {});
+        discardStream(response.body);
         throw new ProviderResponseError("eBay Browse search failed", {
           httpStatus: response.status,
         });

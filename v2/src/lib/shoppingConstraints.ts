@@ -46,22 +46,25 @@ interface Money {
 export function classifyBudgetFit(price: Money, shipping: Money | null, budgetUsd: number | null): BudgetFit {
   if (budgetUsd == null) return { kind: "no_budget" };
   if (price.currency !== "USD") return { kind: "not_comparable", currency: price.currency };
-  if (price.amount > budgetUsd) return { kind: "over_asking", over: round2(price.amount - budgetUsd) };
+  // Integer cents, rounded per operand BEFORE adding: 39.95 + 9.95 must equal 49.90.
+  const budget = toCents(budgetUsd);
+  const priceCents = toCents(price.amount);
+  if (priceCents > budget) return { kind: "over_asking", over: (priceCents - budget) / 100 };
   if (shipping && shipping.currency === "USD") {
-    const total = price.amount + shipping.amount;
-    return total > budgetUsd
-      ? { kind: "over_with_shipping", over: round2(total - budgetUsd) }
+    const total = priceCents + toCents(shipping.amount);
+    return total > budget
+      ? { kind: "over_with_shipping", over: (total - budget) / 100 }
       : { kind: "within_listing_total" };
   }
   return { kind: "within_asking_only" };
 }
 
-export function isOverBudget(fit: BudgetFit): boolean {
-  return fit.kind === "over_asking" || fit.kind === "over_with_shipping";
+function toCents(amount: number): number {
+  return Math.round(amount * 100);
 }
 
-function round2(value: number): number {
-  return Math.round(value * 100) / 100;
+export function isOverBudget(fit: BudgetFit): boolean {
+  return fit.kind === "over_asking" || fit.kind === "over_with_shipping";
 }
 
 /** User-facing wording. Never says match, verified, cheapest, best, or winner. */

@@ -45,6 +45,15 @@ describe("classifyBudgetFit", () => {
     expect(budgetFitLabel(fit, 80)).toMatch(/tax and fees unknown/);
   });
 
+  it("compares in cents: 39.95 + 9.95 against a 49.90 budget is within, 1 cent over is over", () => {
+    expect(classifyBudgetFit(usd(39.95), usd(9.95), 49.9).kind).toBe("within_listing_total");
+    expect(classifyBudgetFit(usd(39.96), usd(9.95), 49.9)).toEqual({ kind: "over_with_shipping", over: 0.01 });
+    expect(classifyBudgetFit(usd(49.9), null, 49.9).kind).toBe("within_asking_only");
+    expect(classifyBudgetFit(usd(49.91), null, 49.9)).toEqual({ kind: "over_asking", over: 0.01 });
+    expect(classifyBudgetFit(usd(0.1), usd(0.2), 0.3).kind).toBe("within_listing_total");
+    expect(classifyBudgetFit(usd(19.99), usd(0.01), 20).kind).toBe("within_listing_total");
+  });
+
   it("does not convert currencies or compare a mismatched shipping currency", () => {
     expect(classifyBudgetFit({ amount: 10, currency: "EUR" }, null, 80).kind).toBe("not_comparable");
     expect(classifyBudgetFit(usd(60), { amount: 5, currency: "EUR" }, 80).kind).toBe("within_asking_only");
