@@ -20,8 +20,12 @@ import { parseBudgetInput } from "./lib/budgetValidation";
 import {
   buildConciergeBrief,
   clearDraft,
+  isDraftEmpty,
+  isSavingPaused,
   loadDraft,
   saveDraft,
+  setSavingPaused,
+  type PersistedDraft,
 } from "./lib/draftStorage";
 import { canDecodeImage } from "./lib/imageDecode";
 import { IMAGE_DECODE_ERROR, validateImageCompleteness, validateImageContent } from "./lib/imageValidation";
@@ -29,6 +33,7 @@ import { clampText } from "./lib/textLimit";
 import { buildMarketplaceSearchUrl } from "./lib/marketplaceUrls";
 import {
   DRAFT_MAX_TEXT_LENGTH,
+  DRAFT_TTL_DAYS,
   ITEM_CATEGORIES,
   type ItemCategory,
   type ItemCondition,
@@ -79,7 +84,15 @@ const STORAGE_UNAVAILABLE_MESSAGE =
 const CLEAR_FAILED_MESSAGE =
   "Your browser blocked deleting the saved fields, so an earlier saved copy may still be stored on this device.";
 
+function fieldsKey(d: Omit<PersistedDraft, "savedAt">): string {
+  return JSON.stringify([d.category, d.description, d.size, d.condition, d.region, d.budgetUsd, d.conciergeNote]);
+}
+
+const CONDITION_LABELS: Record<ItemCondition, string> = { new: "New", used: "Used", either: "Either" };
+
 export default function App() {
+  // Restore synchronously so the first autosave pass sees the restored fields, not blanks.
+  const [initial] = useState<PersistedDraft | null>(() => loadDraft());
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageRequestId = useRef(0);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -90,17 +103,22 @@ export default function App() {
     description: false, size: false, note: false,
   });
   const [storageWarning, setStorageWarning] = useState<string | null>(null);
+  const [savingEnabled, setSavingEnabled] = useState(() => !isSavingPaused());
+  const [savedDraft, setSavedDraft] = useState<PersistedDraft | null>(initial);
+  // Fingerprint of what storage already holds, so restoring a draft never re-saves
+  // it (which would silently extend its retention) and unchanged fields never rewrite.
+  const persistedKey = useRef<string | null>(initial ? fieldsKey(initial) : null);
 
-  const [category, setCategory] = useState<ItemCategory | "">("");
-  const [description, setDescription] = useState("");
-  const [size, setSize] = useState("");
-  const [condition, setCondition] = useState<ItemCondition>("either");
-  const [region, setRegion] = useState<ShipRegion>("US");
-  const [budgetRaw, setBudgetRaw] = useState("");
-  const [budgetUsd, setBudgetUsd] = useState<number | null>(null);
+  const [category, setCategory] = useState<ItemCategory | "">(initial?.category ?? "");
+  const [description, setDescription] = useState(initial?.description ?? "");
+  const [size, setSize] = useState(initial?.size ?? "");
+  const [condition, setCondition] = useState<ItemCondition>(initial?.condition ?? "either");
+  const [region, setRegion] = useState<ShipRegion>(initial?.region ?? "US");
+  const [budgetRaw, setBudgetRaw] = useState(initial?.budgetUsd != null ? String(initial.budgetUsd) : "");
+  const [budgetUsd, setBudgetUsd] = useState<number | null>(initial?.budgetUsd ?? null);
 
   const [conciergeOpen, setConciergeOpen] = useState(false);
-  const [conciergeNote, setConciergeNote] = useState("");
+  const [conciergeNote, setConciergeNote] = useState(initial?.conciergeNote ?? "");
   const [conciergeEmail, setConciergeEmail] = useState("");
   const [catalogStatus, setCatalogStatus] = useState<LocalCatalogStatus | null>(null);
   const [catalogChecking, setCatalogChecking] = useState(false);
@@ -192,27 +210,32 @@ export default function App() {
       : "describe";
 
   useEffect(() => {
-    const saved = loadDraft();
-    if (!saved) return;
-    setCategory(saved.category);
-    setDescription(saved.description);
-    setSize(saved.size);
-    setCondition(saved.condition);
-    setRegion(saved.region);
-    setBudgetUsd(saved.budgetUsd);
-    setBudgetRaw(saved.budgetUsd != null ? String(saved.budgetUsd) : "");
-    setConciergeNote(saved.conciergeNote);
-  }, []);
-
-  useEffect(() => {
-    if (!hasPhoto && !description && !category) return;
-    const saved = saveDraft({
-      ...draftInput,
-      savedAt: new Date().toISOString(),
-      conciergeNote,
-    });
-    setStorageWarning(saved ? null : STORAGE_UNAVAILABLE_MESSAGE);
-  }, [draftInput, conciergeNote, hasPhoto, description, category]);
+    if (!savingEnabled) return;
+    const fields = { ...draftInput, conciergeNote };
+    if (isDraftEmpty(fields)) {
+      // Emptied fields must not leave an older copy behind.
+      if (persistedKey.current !== null) {
+        if (clearDraft()) {
+          persistedKey.current = null;
+          setSavedDraft(null);
+          setStorageWarning(null);
+        } else {
+          setStorageWarning(CLEAR_FAILED_MESSAGE);
+        }
+      }
+      return;
+    }
+    const key = fieldsKey(fields);
+    if (key === persistedKey.current) return;
+    const draft = { ...fields, savedAt: new Date().toISOString() };
+    if (saveDraft(draft)) {
+      persistedKey.current = key;
+      setSavedDraft(draft);
+      setStorageWarning(null);
+    } else {
+      setStorageWarning(STORAGE_UNAVAILABLE_MESSAGE);
+    }
+  }, [draftInput, conciergeNote, savingEnabled]);
 
   const revokePreview = useCallback((url: string | null) => {
     if (url) URL.revokeObjectURL(url);
@@ -355,17 +378,37 @@ export default function App() {
     setConciergeNote("");
     setConciergeEmail("");
     setConciergeOpen(false);
-    if (!clearDraft()) setStorageWarning(CLEAR_FAILED_MESSAGE);
+    if (clearDraft()) {
+      persistedKey.current = null;
+      setSavedDraft(null);
+    } else {
+      setStorageWarning(CLEAR_FAILED_MESSAGE);
+    }
   };
 
   const clearSavedDraft = () => {
+    // Pause first: a deleted draft must not be recreated by the next edit.
+    setSavingEnabled(false);
+    const pauseStored = setSavingPaused(true);
     if (clearDraft()) {
+      persistedKey.current = null;
+      setSavedDraft(null);
       setStorageWarning(null);
-      setCopyStatus("Saved field draft cleared. Photo stays until you remove it.");
+      setCopyStatus(
+        pauseStored
+          ? "Saved fields deleted. Saving stays off until you turn it back on. Fields on screen and any photo are unchanged."
+          : "Saved fields deleted. Saving is off for this visit only, because your browser blocked remembering that choice. Fields on screen and any photo are unchanged.",
+      );
     } else {
       setCopyStatus(null);
       setStorageWarning(CLEAR_FAILED_MESSAGE);
     }
+  };
+
+  const resumeSaving = () => {
+    setSavingPaused(false);
+    setCopyStatus(null);
+    setSavingEnabled(true);
   };
 
   const conciergeBrief = buildConciergeBrief(
@@ -469,6 +512,48 @@ export default function App() {
         <div className="error-banner" role="status" aria-live="polite" data-testid="storage-warning">
           {storageWarning}
         </div>
+      )}
+
+      {(savedDraft || !savingEnabled) && (
+        <section className="panel" aria-labelledby="saved-heading" data-testid="saved-fields">
+          <h2 id="saved-heading">Saved on this device</h2>
+          <p className="honest-note">
+            {savedDraft
+              ? `Search fields (including your sourcing notes) are stored in this browser only, never your photo or email. They are removed automatically ${DRAFT_TTL_DAYS} days after the last change.`
+              : "No search fields are saved on this device."}{" "}
+            {!savingEnabled && "Saving is turned off."}
+          </p>
+          {savedDraft && (
+            <details className="saved-details">
+              <summary>Inspect saved fields</summary>
+              <dl className="saved-fields">
+                <dt>Last saved</dt><dd>{savedDraft.savedAt.slice(0, 10)}</dd>
+                <dt>Item focus</dt><dd>{savedDraft.category || "(not set)"}</dd>
+                <dt>Description</dt><dd>{savedDraft.description || "(not set)"}</dd>
+                <dt>Size</dt><dd>{savedDraft.size || "(not set)"}</dd>
+                <dt>Condition</dt><dd>{CONDITION_LABELS[savedDraft.condition]}</dd>
+                <dt>Ship to</dt><dd>{savedDraft.region}</dd>
+                <dt>Max budget (USD)</dt><dd>{savedDraft.budgetUsd ?? "(none)"}</dd>
+                <dt>Sourcing notes</dt><dd className="saved-note">{savedDraft.conciergeNote || "(none)"}</dd>
+              </dl>
+            </details>
+          )}
+          <div className="action-row">
+            {savedDraft && (
+              <button type="button" className="btn btn-secondary" onClick={clearSavedDraft}>
+                Delete saved fields
+              </button>
+            )}
+            {!savingEnabled && (
+              <button type="button" className="btn btn-ghost" onClick={resumeSaving}>
+                Turn saving back on
+              </button>
+            )}
+          </div>
+          {copyStatus && !savedDraft && (
+            <p className="honest-note" role="status">{copyStatus}</p>
+          )}
+        </section>
       )}
 
       {imageError && (
@@ -645,13 +730,6 @@ export default function App() {
             <button type="button" className="btn btn-ghost" onClick={resetAll}>
               Reset all
             </button>
-            <button
-              type="button"
-              className="btn btn-ghost"
-              onClick={clearSavedDraft}
-            >
-              Clear saved fields
-            </button>
           </div>
         </section>
       )}
@@ -799,8 +877,8 @@ export default function App() {
           <a href="https://github.com/jmsgnnr" rel="noopener noreferrer">
             @jmsgnnr
           </a>
-          . Uploads stay in browser memory. Saved drafts contain search fields only;
-          contact email is not saved.
+          . Uploads stay in browser memory. Saved drafts contain search fields and sourcing notes only, expire after
+          {" "}{DRAFT_TTL_DAYS} days, and never include your photo or contact email.
         </p>
         <p>
           Merchant links open third-party sites under their terms. Affiliate

@@ -34,10 +34,11 @@ test.describe("restored drafts and storage failures", () => {
   });
 
   test("blocked storage keeps editing working and shows an accurate message", async ({ page }) => {
-    await page.addInitScript(() => {
+    await page.addInitScript((key) => {
+      localStorage.setItem(key, JSON.stringify({ category: "Coat", description: "older saved coat", size: "", condition: "either", region: "US", budgetUsd: null, conciergeNote: "", savedAt: new Date().toISOString() }));
       Storage.prototype.setItem = () => { throw new DOMException("full", "QuotaExceededError"); };
       Storage.prototype.removeItem = () => { throw new DOMException("blocked", "SecurityError"); };
-    });
+    }, KEY);
     await page.goto("/");
     await page.getByRole("button", { name: /prepare sourcing brief/i }).click();
     await page.getByLabel("What makes this hunt hard?").fill("typing still works");
@@ -48,9 +49,10 @@ test.describe("restored drafts and storage failures", () => {
     await page.getByLabel("Describe the piece").fill("tan corduroy chore coat");
     await expect(page.getByLabel("Constructed search phrase")).toContainText("corduroy");
     await expect(page.getByTestId("storage-warning")).toContainText(/not being saved/i);
-    await page.getByRole("button", { name: /clear saved fields/i }).click();
+    await page.getByRole("button", { name: /delete saved fields/i }).click();
     await expect(page.getByTestId("storage-warning")).toContainText(/blocked deleting/i);
-    await expect(page.getByText(/saved field draft cleared/i)).toHaveCount(0);
+    await expect(page.getByText(/saved fields deleted/i)).toHaveCount(0);
+    await expect(page.getByTestId("saved-fields")).toBeVisible();
   });
 
   test("oversize paste shows feedback and the saved draft restores intact", async ({ page }) => {

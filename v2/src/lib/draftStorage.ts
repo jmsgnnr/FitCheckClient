@@ -1,6 +1,7 @@
 import { clampText, stripLoneSurrogates } from "./textLimit";
 import {
   DRAFT_MAX_TEXT_LENGTH,
+  DRAFT_PAUSE_KEY,
   DRAFT_STORAGE_KEY,
   DRAFT_TTL_MS,
   ITEM_CATEGORIES,
@@ -70,12 +71,18 @@ export function loadDraft(now: number = Date.now()): PersistedDraft | null {
   }
   if (!raw) return null;
   let draft: PersistedDraft | null = null;
+  let hasExtraKeys = false;
   try {
-    draft = validateDraft(JSON.parse(raw), now);
+    const parsed: unknown = JSON.parse(raw);
+    draft = validateDraft(parsed, now);
+    hasExtraKeys = draft !== null && isRecord(parsed) &&
+      Object.keys(parsed).some((key) => !(key in draft!));
   } catch {
     draft = null;
   }
   if (!draft) clearDraft();
+  // Scrub legacy extras (for example an old contact email) without touching savedAt.
+  else if (hasExtraKeys) saveDraft(draft);
   return draft;
 }
 
@@ -106,6 +113,35 @@ export function clearDraft(): boolean {
   } catch {
     return false;
   }
+}
+
+/**
+ * Whether the shopper deliberately turned saving off (for example by deleting
+ * the saved fields). The marker is a bare flag; it holds no shopper data.
+ */
+export function isSavingPaused(): boolean {
+  try {
+    return localStorage.getItem(DRAFT_PAUSE_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+/** Returns true only if the preference was stored. Never throws. */
+export function setSavingPaused(paused: boolean): boolean {
+  try {
+    if (paused) localStorage.setItem(DRAFT_PAUSE_KEY, "1");
+    else localStorage.removeItem(DRAFT_PAUSE_KEY);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** A draft with no shopper-entered content is not worth persisting. */
+export function isDraftEmpty(d: Omit<PersistedDraft, "savedAt">): boolean {
+  return d.category === "" && d.description === "" && d.size === "" &&
+    d.conciergeNote === "" && d.budgetUsd === null;
 }
 
 export function buildConciergeBrief(
