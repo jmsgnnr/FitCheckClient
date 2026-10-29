@@ -53,6 +53,16 @@ Live eBay Browse requests are **off** unless every gate below is satisfied. Do n
 
 Optional local status API (not started by `npm run dev`): binds `127.0.0.1` only via `v2/server/http/server.mjs`. Endpoints: `GET /api/catalog/status`, `GET /api/catalog/search?q=...&region=US`. The UI's **Mexico** destination remains available for text handoffs, but the eBay Buy adapter deliberately **rejects MX**, because eBay's supported Buy marketplace list does not include `EBAY_MX`. A future supported-marketplace-plus-Mexico-shipping strategy must be validated before enabling it. All catalog tests use synthetic mock responses; do not interpret the `available` mock status as production access.
 
+### Local catalog API trust policy
+
+Enforced in `server/http/server.mjs` for every request, before routing and before any adapter or credential call. Violations return `403 {"error":"forbidden_origin_or_host"}`.
+
+- **Host**: must be exactly `127.0.0.1`, `localhost` or `[::1]` plus the port the socket is actually serving. Rebinding names (`evil.example`, `127.0.0.1.evil.com`), userinfo, other ports, missing/oversized Host are rejected.
+- **Origin (present)**: must exactly match an allowed local client origin. Default: `http://127.0.0.1:5173`, `http://localhost:5173`; override with the `allowedOrigins` option. `null` and empty Origins are rejected.
+- **Origin (missing)**: allowed only for non-browser local tooling (curl, tests), i.e. when `Sec-Fetch-Site` is absent, `same-origin` or `none`. A browser request that omits Origin but sends `Sec-Fetch-Site: cross-site`/`same-site` (e.g. `<script src>`) is rejected.
+- **Budget**: `/api/catalog/search` is limited in memory to 30 requests per 60 s and 2 concurrent requests (`budget: { maxRequests, windowMs, maxConcurrent }`); excess gets `429 request_budget_exceeded`. Rejected (403) traffic does not consume budget.
+- The existing loopback-only bind and live/credential/production-approval gates are unchanged. No image bytes are accepted or sent.
+
 Future `search_by_image` requires (1) owner-approved provider config and (2) explicit shopper consent before forwarding a photo. That path is not implemented here.
 
 ## Honest limitations
