@@ -34,6 +34,11 @@ import "./styles/app.css";
 
 type ActiveStep = "photo" | "describe" | "ready";
 
+const STORAGE_UNAVAILABLE_MESSAGE =
+  "Your browser blocked saving, so these fields are not being saved. You can keep editing and searching; they will be lost when you close or reload this page.";
+const CLEAR_FAILED_MESSAGE =
+  "Your browser blocked deleting the saved fields, so an earlier saved copy may still be stored on this device.";
+
 export default function App() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageRequestId = useRef(0);
@@ -41,6 +46,7 @@ export default function App() {
   const [imageError, setImageError] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [copyStatus, setCopyStatus] = useState<string | null>(null);
+  const [storageWarning, setStorageWarning] = useState<string | null>(null);
 
   const [category, setCategory] = useState<ItemCategory | "">("");
   const [description, setDescription] = useState("");
@@ -140,11 +146,12 @@ export default function App() {
 
   useEffect(() => {
     if (!hasPhoto && !description && !category) return;
-    saveDraft({
+    const saved = saveDraft({
       ...draftInput,
       savedAt: new Date().toISOString(),
       conciergeNote,
     });
+    setStorageWarning(saved ? null : STORAGE_UNAVAILABLE_MESSAGE);
   }, [draftInput, conciergeNote, hasPhoto, description, category]);
 
   const revokePreview = useCallback((url: string | null) => {
@@ -283,12 +290,17 @@ export default function App() {
     setConciergeNote("");
     setConciergeEmail("");
     setConciergeOpen(false);
-    clearDraft();
+    if (!clearDraft()) setStorageWarning(CLEAR_FAILED_MESSAGE);
   };
 
   const clearSavedDraft = () => {
-    clearDraft();
-    setCopyStatus("Saved field draft cleared. Photo stays until you remove it.");
+    if (clearDraft()) {
+      setStorageWarning(null);
+      setCopyStatus("Saved field draft cleared. Photo stays until you remove it.");
+    } else {
+      setCopyStatus(null);
+      setStorageWarning(CLEAR_FAILED_MESSAGE);
+    }
   };
 
   const conciergeBrief = buildConciergeBrief(
@@ -383,6 +395,12 @@ export default function App() {
           )}
         </div>
       </section>
+
+      {storageWarning && (
+        <div className="error-banner" role="status" aria-live="polite" data-testid="storage-warning">
+          {storageWarning}
+        </div>
+      )}
 
       {imageError && (
         <div className="error-banner" role="alert" aria-live="assertive">
