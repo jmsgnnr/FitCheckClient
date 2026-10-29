@@ -67,6 +67,42 @@ async function readBytes(blob: Blob): Promise<Uint8Array> {
   });
 }
 
+/**
+ * True when the JPEG's own marker stream reaches EOI. Linear in file size and
+ * never throws: any malformed length or premature end returns false.
+ */
+export function jpegHasPrimaryEoi(bytes: Uint8Array): boolean {
+  const n = bytes.length;
+  if (n < 4 || bytes[0] !== 0xff || bytes[1] !== 0xd8) return false;
+  let i = 2;
+  while (i < n) {
+    if (bytes[i] !== 0xff) return false; // expected a marker
+    while (i < n && bytes[i] === 0xff) i += 1; // fill bytes
+    if (i >= n) return false;
+    const marker = bytes[i];
+    i += 1;
+    if (marker === 0xd9) return true;
+    if (marker === 0x00) return false;
+    if (marker === 0x01 || marker === 0xd8 || (marker >= 0xd0 && marker <= 0xd7)) continue;
+    if (i + 2 > n) return false;
+    const length = (bytes[i] << 8) | bytes[i + 1];
+    if (length < 2 || i + length > n) return false;
+    i += length;
+    if (marker === 0xda) {
+      // Entropy-coded data: FF00 is a stuffed byte, FFD0-D7 are restarts, FFFF is fill.
+      for (;;) {
+        while (i < n && bytes[i] !== 0xff) i += 1;
+        if (i + 1 >= n) return false;
+        const next = bytes[i + 1];
+        if (next === 0x00 || (next >= 0xd0 && next <= 0xd7)) { i += 2; continue; }
+        if (next === 0xff) { i += 1; continue; }
+        break; // real marker; outer loop handles it
+      }
+    }
+  }
+  return false;
+}
+
 const PNG_IEND = [0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4e, 0x44, 0xae, 0x42, 0x60, 0x82];
 
 /**
@@ -87,13 +123,9 @@ export async function validateImageCompleteness(file: File): Promise<ImageValida
         : incomplete;
     }
     if (file.type === "image/jpeg") {
-      // EOI (FFD9) may be followed by padding or vendor trailers (e.g. motion-photo data),
-      // so search a 64 KiB tail window. FF is byte-stuffed inside entropy-coded scans.
-      const tail = await readBytes(file.slice(Math.max(0, file.size - 65536)));
-      for (let i = tail.length - 2; i >= 0; i -= 1) {
-        if (tail[i] === 0xff && tail[i + 1] === 0xd9) return { ok: true };
-      }
-      return incomplete;
+      // Walk the marker structure to the primary image's EOI; trailing data
+      // (motion-photo video, vendor blobs) after it is ignored. Size is capped at 10 MB.
+      return jpegHasPrimaryEoi(await readBytes(file)) ? { ok: true } : incomplete;
     }
     if (file.type === "image/webp") {
       const head = await readBytes(file.slice(0, 8));
