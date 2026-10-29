@@ -21,6 +21,7 @@ import {
   loadDraft,
   saveDraft,
 } from "./lib/draftStorage";
+import { clampText } from "./lib/textLimit";
 import { validateImageContent } from "./lib/imageValidation";
 import { buildMarketplaceSearchUrl } from "./lib/marketplaceUrls";
 import {
@@ -88,7 +89,7 @@ export default function App() {
   const limited = (field: "description" | "size" | "note", set: (v: string) => void) =>
     (value: string) => {
       const tooLong = value.length > DRAFT_MAX_TEXT_LENGTH;
-      set(tooLong ? value.slice(0, DRAFT_MAX_TEXT_LENGTH) : value);
+      set(clampText(value, DRAFT_MAX_TEXT_LENGTH));
       setLimitHit((prev) => (prev[field] === tooLong ? prev : { ...prev, [field]: tooLong }));
     };
   const limitMessage = `Text was shortened to the ${DRAFT_MAX_TEXT_LENGTH.toLocaleString("en-US")} character limit.`;

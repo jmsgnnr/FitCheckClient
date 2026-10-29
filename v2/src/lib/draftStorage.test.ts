@@ -203,3 +203,25 @@ describe("save/restore limits agree", () => {
     expect(localStorage.getItem(DRAFT_STORAGE_KEY)).toBeNull();
   });
 });
+
+describe("surrogate safety", () => {
+  beforeEach(() => localStorage.clear());
+  const d = {
+    category: "Coat" as const, description: "x", size: "", condition: "either" as const,
+    region: "US" as const, budgetUsd: null, conciergeNote: "", savedAt: new Date().toISOString(),
+  };
+
+  it("saveDraft never persists a split surrogate pair", () => {
+    expect(saveDraft({ ...d, description: "a".repeat(4999) + "😀" })).toBe(true);
+    const restored = loadDraft();
+    expect(restored?.description).toBe("a".repeat(4999));
+    expect(() => encodeURIComponent(restored!.description)).not.toThrow();
+  });
+
+  it("restore repairs lone surrogates from stored drafts", () => {
+    localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify({ ...d, description: "ab\uD83D", conciergeNote: "\uDE00n" }));
+    const restored = loadDraft();
+    expect(restored?.description).toBe("ab");
+    expect(restored?.conciergeNote).toBe("n");
+  });
+});
