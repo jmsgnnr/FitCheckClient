@@ -5,7 +5,7 @@ import {
   loadDraft,
   saveDraft,
 } from "./draftStorage";
-import { DRAFT_STORAGE_KEY, DRAFT_TTL_MS } from "./constants";
+import { DRAFT_MAX_TEXT_LENGTH, DRAFT_STORAGE_KEY, DRAFT_TTL_MS } from "./constants";
 import { buildSearchPhrase } from "./searchPhrase";
 
 describe("draftStorage", () => {
@@ -173,5 +173,33 @@ describe("storage failures", () => {
   it("success paths return true", () => {
     expect(saveDraft(draft)).toBe(true);
     expect(clearDraft()).toBe(true);
+  });
+});
+
+
+describe("save/restore limits agree", () => {
+  beforeEach(() => localStorage.clear());
+  const base = {
+    category: "Coat" as const, description: "x", size: "", condition: "either" as const,
+    region: "US" as const, budgetUsd: null, conciergeNote: "", savedAt: new Date().toISOString(),
+  };
+
+  it("clamps oversize text on save so the saved draft restores intact", () => {
+    expect(saveDraft({ ...base, description: "d".repeat(DRAFT_MAX_TEXT_LENGTH + 500), conciergeNote: "n".repeat(99999) })).toBe(true);
+    const restored = loadDraft();
+    expect(restored).not.toBeNull();
+    expect(restored?.description).toHaveLength(DRAFT_MAX_TEXT_LENGTH);
+    expect(restored?.conciergeNote).toHaveLength(DRAFT_MAX_TEXT_LENGTH);
+    expect(restored?.category).toBe("Coat");
+  });
+
+  it("exactly-at-limit text round-trips unchanged", () => {
+    saveDraft({ ...base, size: "s".repeat(DRAFT_MAX_TEXT_LENGTH) });
+    expect(loadDraft()?.size).toHaveLength(DRAFT_MAX_TEXT_LENGTH);
+  });
+
+  it("refuses to persist a draft that restore would reject", () => {
+    expect(saveDraft({ ...base, budgetUsd: -1 })).toBe(false);
+    expect(localStorage.getItem(DRAFT_STORAGE_KEY)).toBeNull();
   });
 });

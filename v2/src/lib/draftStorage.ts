@@ -79,8 +79,17 @@ export function loadDraft(now: number = Date.now()): PersistedDraft | null {
 
 /** Returns true only if the draft was actually written. Never throws. */
 export function saveDraft(draft: PersistedDraft): boolean {
+  // Clamp to the same limits restore enforces, and refuse anything restore would
+  // discard, so the app can never persist a draft its own loader rejects.
+  const clamped: PersistedDraft = {
+    ...draft,
+    description: draft.description.slice(0, DRAFT_MAX_TEXT_LENGTH),
+    size: draft.size.slice(0, DRAFT_MAX_TEXT_LENGTH),
+    conciergeNote: draft.conciergeNote.slice(0, DRAFT_MAX_TEXT_LENGTH),
+  };
+  if (validateDraft(clamped) === null) return false;
   try {
-    localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draft));
+    localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(clamped));
     return true;
   } catch {
     return false;

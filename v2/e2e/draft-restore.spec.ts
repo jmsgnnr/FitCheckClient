@@ -52,4 +52,17 @@ test.describe("restored drafts and storage failures", () => {
     await expect(page.getByTestId("storage-warning")).toContainText(/blocked deleting/i);
     await expect(page.getByText(/saved field draft cleared/i)).toHaveCount(0);
   });
+
+  test("oversize paste shows feedback and the saved draft restores intact", async ({ page }) => {
+    await page.goto("/");
+    await page.locator('input[type="file"]').setInputFiles("e2e/fixtures/specimen.png");
+    await expect(page.getByAltText(/uploaded garment/i)).toBeVisible();
+    await page.getByLabel("Item focus").selectOption("Jacket");
+    await page.getByLabel("Describe the piece").fill("a".repeat(6000));
+    await expect(page.locator("#description-limit")).toContainText(/shortened to the 5,000 character limit/i);
+    expect(await page.getByLabel("Describe the piece").inputValue()).toHaveLength(5000);
+    await page.reload();
+    await page.locator('input[type="file"]').setInputFiles("e2e/fixtures/specimen.png");
+    await expect(page.getByLabel("Describe the piece")).toHaveValue("a".repeat(5000));
+  });
 });
