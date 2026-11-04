@@ -19,6 +19,8 @@ export default function FindFit({ provider }: { provider: FitProvider }) {
   const [phase, setPhase] = useState<Phase>("idle");
   const [result, setResult] = useState<FitResult | null>(null);
   const [error, setError] = useState("");
+  const samples = Boolean(provider.listingsAreSamples);
+  const sampleUi = provider.isDemo || samples;
 
   useEffect(() => () => { if (urlRef.current) URL.revokeObjectURL(urlRef.current); }, []);
   useEffect(() => { if (phase === "done") resultsRef.current?.focus(); }, [phase]);
@@ -78,7 +80,7 @@ export default function FindFit({ provider }: { provider: FitProvider }) {
     <div className="find-shell">
       <header className="find-top">
         <p className="find-mark">FIT<span>CHECK</span></p>
-        {provider.isDemo && <p className="find-demo-tag">DEMO: SAMPLE LISTINGS</p>}
+        {sampleUi && <p className="find-demo-tag">DEMO: SAMPLE LISTINGS</p>}
       </header>
       <main>
         <h1>Snap the fit.<br /><span>We find it.</span></h1>
@@ -106,7 +108,9 @@ export default function FindFit({ provider }: { provider: FitProvider }) {
             {provider.sendsPhoto && (
               <label className="find-consent">
                 <input type="checkbox" checked={consented} onChange={(event) => setConsented(event.target.checked)} />
-                Send this photo to {provider.name} to find matches
+                {samples
+                  ? "Send this photo to Cloudflare to identify the item. Clothing and shoes only, with no people."
+                  : `Send this photo to ${provider.name} to find matches`}
               </label>
             )}
             <button
@@ -120,25 +124,31 @@ export default function FindFit({ provider }: { provider: FitProvider }) {
             <button type="button" className="find-quiet" onClick={() => clear()}>Remove photo</button>
           </div>
         )}
-        {provider.isDemo && (
+        {samples ? (
+          <p className="find-note">
+            Your photo is sent to Cloudflare to identify the item and isn&apos;t stored. The listings below are samples, not real results.
+          </p>
+        ) : provider.isDemo ? (
           <p className="find-note">
             Demo mode: your photo stays on this device and isn&apos;t analyzed. Every photo gets the same sample listings.
           </p>
-        )}
+        ) : null}
         <div aria-live="polite">{phase === "searching" && <p className="find-note">Looking for your fit...</p>}</div>
         {phase === "done" && result && (
           <section className="find-results" aria-labelledby="find-results-heading">
             <h2 id="find-results-heading" ref={resultsRef} tabIndex={-1}>
-              {result.listings.length ? (provider.isDemo ? "Sample results" : "What we found") : "No matches found"}
+              {result.listings.length ? (sampleUi ? "Sample results" : "What we found") : "No matches found"}
             </h2>
             {result.identified && <p className="find-identified">Looks like {result.identified}</p>}
             {!result.listings.length && <p className="find-note">Try a clearer photo with one item in frame.</p>}
             <ul>
               {result.listings.map((listing) => (
                 <li key={listing.id}>
-                  <div className="find-thumb" aria-hidden="true">{provider.isDemo ? "SAMPLE" : ""}</div>
+                  <div className="find-thumb" aria-hidden="true">{sampleUi ? "SAMPLE" : ""}</div>
                   <div>
-                    <p className={`find-badge ${listing.evidence === "product_id" ? "is-exact" : ""}`}>{matchLabel(listing.evidence)}</p>
+                    {!samples && (
+                      <p className={`find-badge ${listing.evidence === "product_id" ? "is-exact" : ""}`}>{matchLabel(listing.evidence)}</p>
+                    )}
                     <h3>{listing.title}</h3>
                     <p className="find-price">{listing.priceText}</p>
                     <p className="find-meta">{listing.source} · {listing.condition} · {listing.shippingText}</p>

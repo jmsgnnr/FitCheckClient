@@ -1,0 +1,15 @@
+name = "fitcheck-poc"
+main = "src/index.ts"
+compatibility_date = "2024-11-04"
+
+[ai]
+binding = "AI"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "fitcheck-poc"
+database_id = "REPLACE_BEFORE_DEPLOY"
+
+[vars]
+ALLOWED_ORIGINS = "http://127.0.0.1:5173"
+SEARCH_CAP = "40"
