@@ -136,6 +136,8 @@ export function coerceIdentifyFields(raw: unknown): IdentifyFields | null {
       ? categoryRaw
       : null;
   if (!category) return null;
+  // A missing or malformed person check is not a negative answer: fail closed.
+  if (typeof obj.containsPerson !== "boolean") return null;
   return {
     category,
     brand: capString(obj.brand),
@@ -144,7 +146,7 @@ export function coerceIdentifyFields(raw: unknown): IdentifyFields | null {
     styleCode: capString(obj.styleCode),
     visibleText: capStringArray(obj.visibleText),
     uncertainties: capStringArray(obj.uncertainties),
-    containsPerson: obj.containsPerson === true,
+    containsPerson: obj.containsPerson,
   };
 }
 

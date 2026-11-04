@@ -1,3 +1,4 @@
+import { coerceIdentifyFields } from "./index";
 import { describe, expect, it, vi } from "vitest";
 import {
   CONSENT_HEADER,
@@ -248,5 +249,13 @@ describe("handleRequest", () => {
   it("404s unknown paths", async () => {
     const response = await handleRequest(identifyRequest({ path: "/api/other" }), env());
     expect(response.status).toBe(404);
+  });
+});
+
+describe("person check", () => {
+  it("rejects a missing or non-boolean containsPerson as malformed", () => {
+    expect(coerceIdentifyFields({ category: "shoes" })).toBeNull();
+    expect(coerceIdentifyFields({ category: "shoes", containsPerson: "true" })).toBeNull();
+    expect(coerceIdentifyFields({ category: "shoes", containsPerson: false })?.containsPerson).toBe(false);
   });
 });
