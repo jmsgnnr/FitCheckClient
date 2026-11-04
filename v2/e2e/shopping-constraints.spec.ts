@@ -29,7 +29,7 @@ test("budget and destination are labelled as unapplied; over-budget listings are
       headers: { "access-control-allow-origin": "http://127.0.0.1:5173" }, body: JSON.stringify(data),
     });
   });
-  await page.goto("/");
+  await page.goto("/#classic");
   await page.locator('input[type="file"]').setInputFiles(fixturePng);
   await page.getByLabel("Item focus").selectOption("Jacket");
   await page.getByLabel("Describe the piece").fill("brown corduroy chore coat");

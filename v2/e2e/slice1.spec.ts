@@ -12,7 +12,7 @@ test.describe("FitCheck V2 slice 1", () => {
   test("upload, hunt handoff, concierge copy, reset", async ({
     page,
   }, testInfo) => {
-    await page.goto("/");
+    await page.goto("/#classic");
 
     await expect(
       page.getByRole("heading", { name: /upload the fit/i }),
@@ -78,7 +78,7 @@ test.describe("FitCheck V2 slice 1", () => {
   });
 
   test("rejects invalid file type message via helper", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/#classic");
     const txt = path.join(__dirname, "fixtures", "not-an-image.txt");
     await page.locator('input[type="file"]').setInputFiles(txt);
     await expect(page.getByRole("alert")).toContainText(/JPG/i);
@@ -87,7 +87,7 @@ test.describe("FitCheck V2 slice 1", () => {
 
 
 test("rejects a file pretending to be PNG", async ({ page }) => {
-  await page.goto("/");
+  await page.goto("/#classic");
   await page.locator('input[type="file"]').setInputFiles({
     name: "misleading.png",
     mimeType: "image/png",
@@ -98,7 +98,7 @@ test("rejects a file pretending to be PNG", async ({ page }) => {
 });
 
 test("does not claim a seller match before searching; source status expands on demand", async ({ page }) => {
-  await page.goto("/");
+  await page.goto("/#classic");
 
   await expect(page.getByText("[03 Ready]")).toBeVisible();
   await expect(page.locator(".step-tag.is-active")).toContainText("01 Photo");
@@ -132,7 +132,7 @@ test("does not contact local catalog automatically; offline checking is explicit
       body: JSON.stringify({ ebay: { provider: "ebay", status: "disabled", liveRequestsAllowed: false, supportedRegions: ["US"], keywordSearch: true } }),
     });
   });
-  await page.goto("/");
+  await page.goto("/#classic");
   await expect(page.getByText(/no live sellers connected yet/i)).toBeVisible();
   expect(requests).toHaveLength(0);
 
@@ -162,7 +162,7 @@ test("only a shopper click searches simulated local provider; result is clearly 
     await route.fulfill({ status: 200, contentType: "application/json",
       headers: { "access-control-allow-origin": "http://127.0.0.1:5173" }, body: JSON.stringify(data) });
   });
-  await page.goto("/");
+  await page.goto("/#classic");
   await page.locator('input[type="file"]').setInputFiles(fixturePng);
   await page.getByLabel("Item focus").selectOption("Jacket");
   await page.getByLabel("Describe the piece").fill("brown corduroy chore coat");
@@ -194,7 +194,7 @@ test("long catalog queries provide guidance and do not send a search", async ({ 
       body: JSON.stringify({ ebay: { provider: "ebay", status: "available", liveRequestsAllowed: true, supportedRegions: ["US"], keywordSearch: true } }),
     });
   });
-  await page.goto("/");
+  await page.goto("/#classic");
   await page.locator('input[type="file"]').setInputFiles(fixturePng);
   await page.getByLabel("Item focus").selectOption("Jacket");
   await page.getByLabel("Describe the piece").fill("very long coat ".repeat(14));
