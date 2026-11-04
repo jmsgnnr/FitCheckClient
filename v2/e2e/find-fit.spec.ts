@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -70,4 +71,17 @@ test("no results and provider failure are honest and keep the photo", async ({ p
 test("the older search-phrase flow stays at #classic", async ({ page }) => {
   await page.goto("/#classic");
   await expect(page.getByRole("heading", { name: /Upload the fit/i })).toBeVisible();
+});
+
+test("a damaged photo is refused and keeps the earlier photo", async ({ page }) => {
+  const bytes = readFileSync(png);
+  await page.goto("/");
+  await page.locator(input).setInputFiles({ name: "cut.png", mimeType: "image/png", buffer: bytes.subarray(0, Math.floor(bytes.length / 2)) });
+  await expect(page.getByRole("alert")).toBeVisible();
+  await expect(page.getByAltText("Your photo")).toHaveCount(0);
+  await page.locator(input).setInputFiles(png);
+  await expect(page.getByAltText("Your photo")).toBeVisible();
+  await page.locator(input).setInputFiles({ name: "cut.png", mimeType: "image/png", buffer: bytes.subarray(0, Math.floor(bytes.length / 2)) });
+  await expect(page.getByRole("alert")).toBeVisible();
+  await expect(page.getByAltText("Your photo")).toBeVisible();
 });

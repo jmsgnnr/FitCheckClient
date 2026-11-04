@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { FIND_FAILED_MESSAGE, canSearch, findWithDeadline, matchLabel } from "./lib/findFit";
 import type { FitProvider, FitResult } from "./lib/findFit";
+import { canDecodeImage } from "./lib/imageDecode";
 import { IMAGE_DECODE_ERROR, validateImageContent } from "./lib/imageValidation";
 import "./styles/find-fit.css";
 
@@ -10,6 +11,7 @@ export default function FindFit({ provider }: { provider: FitProvider }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const resultsRef = useRef<HTMLHeadingElement>(null);
   const runRef = useRef(0);
+  const chooseRef = useRef(0);
   const urlRef = useRef<string | null>(null);
   const [photo, setPhoto] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -36,9 +38,15 @@ export default function FindFit({ provider }: { provider: FitProvider }) {
 
   const choose = async (file: File | undefined) => {
     if (!file) return;
+    const choice = ++chooseRef.current;
     const checked = await validateImageContent(file);
-    if (!checked.ok) {
-      clear(checked.message);
+    const decoded = checked.ok ? await canDecodeImage(file) : null;
+    if (choice !== chooseRef.current) return;
+    const message = !checked.ok ? checked.message : decoded?.ok ? "" : IMAGE_DECODE_ERROR;
+    if (message) {
+      // A bad replacement leaves the earlier photo and results in place.
+      setError(message);
+      if (inputRef.current) inputRef.current.value = "";
       return;
     }
     clear();
