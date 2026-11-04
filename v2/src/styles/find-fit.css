@@ -1,0 +1,33 @@
+.find-shell { max-width: 720px; margin: 0 auto; padding: 1.25rem 1rem 4rem; }
+.find-top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem 1rem; }
+.find-mark { margin: 0; font-family: "Arial Black", Impact, sans-serif; font-size: 1.4rem; letter-spacing: 0.08em; }
+.find-mark span { color: var(--pink); }
+.find-demo-tag { margin: 0; padding: 0.3rem 0.5rem; background: var(--chartreuse); color: var(--ink); font: 700 0.72rem ui-monospace, monospace; letter-spacing: 0.06em; }
+.find-shell h1 { margin: 2rem 0 1.25rem; font-family: "Arial Black", Impact, sans-serif; font-size: clamp(2.2rem, 9vw, 3.8rem); line-height: 1; text-transform: uppercase; }
+.find-shell h1 span { color: var(--pink); }
+.find-stage { background: var(--paper); border: 3px solid var(--charcoal); min-height: 320px; display: grid; place-items: center; overflow: hidden; }
+.find-stage img { display: block; width: 100%; max-height: 480px; object-fit: contain; }
+.find-drop { width: 100%; min-height: 320px; display: grid; place-content: center; gap: 0.5rem; background: none; border: 0; color: var(--ink); cursor: pointer; font: inherit; }
+.find-drop strong { font-family: "Arial Black", Impact, sans-serif; font-size: 1.3rem; text-transform: uppercase; }
+.find-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem; margin-top: 1rem; }
+.find-consent { flex-basis: 100%; display: flex; align-items: center; gap: 0.6rem; min-height: 44px; }
+.find-go, .find-quiet { min-height: 48px; padding: 0 1.25rem; font: 700 0.95rem ui-monospace, monospace; cursor: pointer; }
+.find-go { flex: 1 1 200px; background: var(--pink); color: var(--ink); border: 2px solid var(--pink); text-transform: uppercase; }
+.find-go:disabled { opacity: 0.6; cursor: not-allowed; }
+.find-quiet { background: none; color: inherit; border: 2px solid currentColor; }
+.find-shell button:focus-visible, .find-shell a:focus-visible, .find-shell input:focus-visible { outline: 3px solid var(--chartreuse); outline-offset: 2px; box-shadow: 0 0 0 6px var(--ink); }
+.find-note { margin: 0.9rem 0 0; font-size: 0.92rem; opacity: 0.85; }
+.find-error { margin: 1rem 0 0; padding: 0.75rem; background: var(--paper); color: var(--ink); border-left: 5px solid var(--pink); }
+.find-results { margin-top: 2rem; }
+.find-results h2 { margin: 0 0 1rem; font-family: "Arial Black", Impact, sans-serif; text-transform: uppercase; }
+.find-results h2:focus { outline: none; }
+.find-identified { font-weight: 700; }
+.find-results ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.9rem; }
+.find-results li { display: grid; grid-template-columns: 110px 1fr; gap: 1rem; padding: 0.9rem; background: var(--paper); color: var(--ink); }
+.find-results h3 { margin: 0.25rem 0; font-size: 1.05rem; }
+.find-results a { color: var(--ink); font-weight: 700; }
+.find-thumb { min-height: 110px; display: grid; place-items: center; font: 700 0.7rem ui-monospace, monospace; color: var(--charcoal); border: 2px dashed var(--charcoal); }
+.find-badge { display: inline-block; margin: 0; padding: 0.15rem 0.4rem; border: 1px solid var(--charcoal); font: 700 0.72rem ui-monospace, monospace; }
+.find-badge.is-exact { background: var(--chartreuse); }
+.find-price { margin: 0.2rem 0; font-weight: 700; }
+.find-meta { margin: 0.1rem 0; font-size: 0.85rem; color: var(--charcoal); }

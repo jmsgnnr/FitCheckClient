@@ -13,7 +13,7 @@ test.describe("image preview decode failures", () => {
     await page.addInitScript(() => {
       delete (window as unknown as { createImageBitmap?: unknown }).createImageBitmap;
     });
-    await page.goto("/");
+    await page.goto("/#classic");
   });
 
   test("truncated image shows an alert and no broken preview", async ({ page }) => {
@@ -39,7 +39,7 @@ test.describe("image preview decode failures", () => {
 });
 
 test("keyboard focus ring is two-tone and visible on a light form field", async ({ page }) => {
-  await page.goto("/");
+  await page.goto("/#classic");
   await page.locator('input[type="file"]').setInputFiles(path.join(__dirname, "fixtures", "specimen.png"));
   await page.getByLabel("Item focus").focus();
   await page.keyboard.press("Tab");

@@ -16,7 +16,7 @@ test.describe("durable draft deletion without a photo", () => {
         localStorage.setItem(key, value);
       }
     }, [KEY, JSON.stringify(seed())]);
-    await page.goto("/");
+    await page.goto("/#classic");
 
     // No photo has been uploaded; the saved fields are still reachable.
     await expect(page.getByAltText(/uploaded garment/i)).toHaveCount(0);
@@ -59,7 +59,7 @@ test.describe("durable draft deletion without a photo", () => {
         localStorage.setItem(key, value);
       }
     }, [KEY, JSON.stringify(seed({ savedAt: new Date(Date.now() - 31 * 86400000).toISOString() }))]);
-    await page.goto("/");
+    await page.goto("/#classic");
     await expect(page.getByTestId("saved-fields")).toHaveCount(0);
     expect(await page.evaluate((k) => localStorage.getItem(k), KEY)).toBeNull();
   });
@@ -72,14 +72,14 @@ test.describe("durable draft deletion without a photo", () => {
         localStorage.setItem(key, value);
       }
     }, [KEY, JSON.stringify(seed({ savedAt }))]);
-    await page.goto("/");
+    await page.goto("/#classic");
     await expect(page.getByTestId("saved-fields")).toBeVisible();
     expect(JSON.parse((await page.evaluate((k) => localStorage.getItem(k), KEY)) ?? "{}").savedAt).toBe(savedAt);
   });
 
   test("no horizontal overflow with the saved-fields panel open", async ({ page }) => {
     await page.addInitScript(([key, value]) => localStorage.setItem(key, value), [KEY, JSON.stringify(seed({ conciergeNote: "long ".repeat(80) }))]);
-    await page.goto("/");
+    await page.goto("/#classic");
     await page.getByTestId("saved-fields").getByText("Inspect saved fields").click();
     const o = await page.evaluate(() => ({ s: document.documentElement.scrollWidth, v: document.documentElement.clientWidth }));
     expect(o.s).toBeLessThanOrEqual(o.v + 1);
@@ -91,9 +91,9 @@ test.describe("durable draft deletion without a photo", () => {
     await a.addInitScript(([key, value]) => {
       if (!localStorage.getItem(key) && !localStorage.getItem("fitcheck-v2-search-draft-paused-v1")) localStorage.setItem(key, value);
     }, [KEY, draft]);
-    await a.goto("/");
+    await a.goto("/#classic");
     const b = await context.newPage();
-    await b.goto("/");
+    await b.goto("/#classic");
     await expect(b.getByTestId("saved-fields")).toBeVisible();
 
     await a.getByRole("button", { name: /delete saved fields/i }).click();
@@ -110,9 +110,9 @@ test.describe("durable draft deletion without a photo", () => {
     await a.addInitScript(([key, value]) => {
       if (!localStorage.getItem(key) && !localStorage.getItem("fitcheck-v2-search-draft-paused-v1")) localStorage.setItem(key, value);
     }, [KEY, JSON.stringify(seed())]);
-    await a.goto("/");
+    await a.goto("/#classic");
     const b = await context.newPage();
-    await b.goto("/");
+    await b.goto("/#classic");
     await expect(b.getByTestId("saved-fields")).toBeVisible();
 
     // A deletes (both tabs paused), then A resumes and writes a fresh draft.
@@ -136,11 +136,11 @@ test.describe("durable draft deletion without a photo", () => {
   test("a tab holding unsaved local fields does not overwrite another tab's draft when saving resumes remotely", async ({ context }) => {
     const b = await context.newPage();
     await b.addInitScript(() => localStorage.setItem("fitcheck-v2-search-draft-paused-v1", "1"));
-    await b.goto("/");
+    await b.goto("/#classic");
     await b.getByRole("button", { name: /prepare sourcing brief/i }).click();
     await b.getByLabel("What makes this hunt hard?").fill("stale unsaved text in B");
     const a = await context.newPage();
-    await a.goto("/");
+    await a.goto("/#classic");
     const theirs = JSON.stringify(seed({ conciergeNote: "draft written by A" }));
     await a.evaluate(([k, v]) => {
       localStorage.setItem(k, v);

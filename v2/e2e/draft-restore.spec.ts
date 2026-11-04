@@ -12,7 +12,7 @@ test.describe("restored drafts and storage failures", () => {
         localStorage.setItem(key, JSON.stringify({ category: 7, description: { x: 1 }, size: null, condition: "bogus", region: "ZZ", budgetUsd: "9", conciergeNote: [], savedAt: "x" }));
       }
     }, KEY);
-    await page.goto("/");
+    await page.goto("/#classic");
     await expect(page.getByRole("heading", { name: /upload the fit/i })).toBeVisible();
     expect(errors).toEqual([]);
     expect(await page.evaluate((key) => localStorage.getItem(key), KEY)).toBeNull();
@@ -25,7 +25,7 @@ test.describe("restored drafts and storage failures", () => {
         localStorage.setItem(key, JSON.stringify({ category: "Coat", description: "vintage wool", size: "M", condition: "used", region: "US", budgetUsd: 80, conciergeNote: "note", savedAt: new Date().toISOString(), conciergeEmail: "leak@example.com" }));
       }
     }, KEY);
-    await page.goto("/");
+    await page.goto("/#classic");
     await page.getByRole("button", { name: /prepare sourcing brief/i }).click();
     await expect(page.getByLabel("Sourcing brief preview")).toContainText("vintage wool");
     const raw = await page.evaluate((key) => localStorage.getItem(key) ?? "", KEY);
@@ -39,7 +39,7 @@ test.describe("restored drafts and storage failures", () => {
       Storage.prototype.setItem = () => { throw new DOMException("full", "QuotaExceededError"); };
       Storage.prototype.removeItem = () => { throw new DOMException("blocked", "SecurityError"); };
     }, KEY);
-    await page.goto("/");
+    await page.goto("/#classic");
     await page.getByRole("button", { name: /prepare sourcing brief/i }).click();
     await page.getByLabel("What makes this hunt hard?").fill("typing still works");
     await expect(page.getByLabel("Sourcing brief preview")).toContainText("typing still works");
@@ -56,7 +56,7 @@ test.describe("restored drafts and storage failures", () => {
   });
 
   test("oversize paste shows feedback and the saved draft restores intact", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/#classic");
     await page.locator('input[type="file"]').setInputFiles("e2e/fixtures/specimen.png");
     await expect(page.getByAltText(/uploaded garment/i)).toBeVisible();
     await page.getByLabel("Item focus").selectOption("Jacket");
@@ -71,7 +71,7 @@ test.describe("restored drafts and storage failures", () => {
   test("a paste ending in an emoji at the limit does not crash the marketplace handoff", async ({ page }) => {
     const errors: string[] = [];
     page.on("pageerror", (e) => errors.push(e.message));
-    await page.goto("/");
+    await page.goto("/#classic");
     await page.locator('input[type="file"]').setInputFiles("e2e/fixtures/specimen.png");
     await page.getByLabel("Item focus").selectOption("Jacket");
     await page.getByLabel("Describe the piece").fill("a".repeat(4999) + "\u{1F600}");
