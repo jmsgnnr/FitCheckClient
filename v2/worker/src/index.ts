@@ -236,6 +236,11 @@ export async function handleRequest(request: Request, env: WorkerEnv): Promise<R
     return errorResponse(400, "Unsupported media type", "bad_type", origin);
   }
 
+  const declaredLength = Number(request.headers.get("Content-Length") ?? 0);
+  if (declaredLength > MAX_IDENTIFY_BYTES) {
+    return errorResponse(413, "Image too large", "too_large", origin);
+  }
+
   const buffer = await request.arrayBuffer();
   if (buffer.byteLength > MAX_IDENTIFY_BYTES) {
     return errorResponse(413, "Image too large", "too_large", origin);
@@ -270,15 +275,8 @@ export async function handleRequest(request: Request, env: WorkerEnv): Promise<R
   let modelOut: unknown;
   try {
     modelOut = await env.AI.run(MODEL_ID, {
-      messages: [
-        {
-          role: "user",
-          content: [
-            { type: "image", image: [...bytes] },
-            { type: "text", text: IDENTIFY_PROMPT },
-          ],
-        },
-      ],
+      prompt: IDENTIFY_PROMPT,
+      image: [...bytes],
       max_tokens: MAX_TOKENS,
     });
   } catch {

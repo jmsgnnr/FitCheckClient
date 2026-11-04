@@ -24,6 +24,16 @@ function cleanJpeg(): Uint8Array {
   return Uint8Array.from([0xff, 0xd8, 0xff, 0xd9]);
 }
 
+/** jsdom's Blob has no arrayBuffer(), so read through FileReader. */
+function blobBytes(blob: Blob): Promise<Uint8Array> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(new Uint8Array(reader.result as ArrayBuffer));
+    reader.onerror = () => reject(reader.error);
+    reader.readAsArrayBuffer(blob);
+  });
+}
+
 describe("jpegHasExifMarker", () => {
   it("detects an APP1 Exif segment and ignores a clean JPEG", () => {
     expect(jpegHasExifMarker(jpegWithExif())).toBe(true);
@@ -64,11 +74,11 @@ describe("preparePhoto", () => {
     });
 
     const input = new File([jpegWithExif()], "with-exif.jpg", { type: "image/jpeg" });
-    expect(jpegHasExifMarker(new Uint8Array(await input.arrayBuffer()))).toBe(true);
+    expect(jpegHasExifMarker(await blobBytes(input))).toBe(true);
 
     const out = await preparePhoto(input);
     expect(out.type).toBe("image/jpeg");
-    const bytes = new Uint8Array(await out.arrayBuffer());
+    const bytes = await blobBytes(out);
     expect(jpegHasExifMarker(bytes)).toBe(false);
     expect(close).toHaveBeenCalled();
   });
