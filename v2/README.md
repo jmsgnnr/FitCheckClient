@@ -67,7 +67,7 @@ Future `search_by_image` requires (1) owner-approved provider config and (2) exp
 
 ## Honest limitations
 
-- Photo understanding and in-app listing cards are **not implemented** in the UI.
+- Photo understanding is **not implemented**. In-app listing cards exist only in developer builds, from the local catalog bridge; production bundles show no in-app listings.
 - The catalog server does not run automatically; the UI still shows **no live sellers connected**. Even when the server runs locally, actual outgoing requests remain disabled without all three independent enablement/approval/credential gates.
 - "Search eBay" / "Search Etsy" open marketplace search pages with your phrase; they are not FitCheck catalog results.
 - **Search phrase = text keywords only** (item type, description, size, condition). Ship-to destination and USD budget are shown beside the phrase as your own notes, not search filters: neither the marketplace links nor the eBay adapter (`q` + `limit` only) verifies them, and appending words like "ship US" or "under $80" would only shrink recall. Returned asking prices are compared with your budget on the listed amounts only (no currency conversion, no tax or fees); over-budget listings are grouped separately and nothing is called a match, winner, or lowest delivered price.
