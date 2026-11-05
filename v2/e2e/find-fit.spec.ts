@@ -85,3 +85,73 @@ test("a damaged photo is refused and keeps the earlier photo", async ({ page }) 
   await expect(page.getByRole("alert")).toBeVisible();
   await expect(page.getByAltText("Your photo")).toBeVisible();
 });
+
+test("cloudflare PoC requires consent, sends the header, shows identify text, hides match badges", async ({ page }) => {
+  // VITE_FITCHECK_API_URL is not set by the existing Playwright webServer, so DEV hash #cloudflare-poc wires the worker provider.
+  let sawConsent = false;
+  await page.route("http://127.0.0.1:8787/api/identify", async (route) => {
+    sawConsent = route.request().headers()["x-fitcheck-consent"] === "yes";
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        identified: {
+          category: "shoes",
+          brand: "SampleBrand",
+          model: "SampleModel",
+          colorway: "Black",
+          styleCode: null,
+          visibleText: [],
+          uncertainties: [],
+        },
+      }),
+    });
+  });
+  await page.goto("/#cloudflare-poc");
+  await expect(page.getByText("DEMO: SAMPLE LISTINGS")).toBeVisible();
+  await expect(page.getByText(/sent to Cloudflare to identify the item and isn't stored/i)).toBeVisible();
+  await page.locator(input).setInputFiles(png);
+  const find = page.getByRole("button", { name: "Find this" });
+  await expect(find).toBeDisabled();
+  await page.getByLabel(/Send this photo to Cloudflare to identify the item/i).check();
+  await expect(find).toBeEnabled();
+  await find.click();
+  await expect(page.getByText(/Looks like SampleBrand SampleModel in Black/i)).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Sample results" })).toBeVisible();
+  await expect(page.getByText("Exact match")).toHaveCount(0);
+  await expect(page.getByText("Similar", { exact: true })).toHaveCount(0);
+  expect(sawConsent).toBe(true);
+});
+
+test("preparePhoto re-encode drops an EXIF APP1 marker from a JPEG fixture", async ({ page }) => {
+  await page.goto("/");
+  const stripped = await page.evaluate(async () => {
+    const { preparePhoto, jpegHasExifMarker } = await import("/src/lib/preparePhoto.ts");
+    const canvas = document.createElement("canvas");
+    canvas.width = 8;
+    canvas.height = 8;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return { ok: false };
+    ctx.fillStyle = "#336699";
+    ctx.fillRect(0, 0, 8, 8);
+    const clean = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.9));
+    if (!clean) return { ok: false };
+    const cleanBytes = new Uint8Array(await clean.arrayBuffer());
+    const exifBody = [0x45, 0x78, 0x69, 0x66, 0x00, 0x00, 0x4d, 0x4d, 0x00, 0x2a, 0x00, 0x00, 0x00, 0x08];
+    const app1Len = exifBody.length + 2;
+    const injected = new Uint8Array(cleanBytes.length + 2 + app1Len);
+    injected[0] = 0xff;
+    injected[1] = 0xd8;
+    injected[2] = 0xff;
+    injected[3] = 0xe1;
+    injected[4] = (app1Len >> 8) & 0xff;
+    injected[5] = app1Len & 0xff;
+    injected.set(exifBody, 6);
+    injected.set(cleanBytes.subarray(2), 6 + exifBody.length);
+    if (!jpegHasExifMarker(injected)) return { ok: false };
+    const out = await preparePhoto(new File([injected], "exif.jpg", { type: "image/jpeg" }));
+    const outBytes = new Uint8Array(await out.arrayBuffer());
+    return { ok: !jpegHasExifMarker(outBytes) };
+  });
+  expect(stripped.ok).toBe(true);
+});

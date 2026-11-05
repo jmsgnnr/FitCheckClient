@@ -1,3 +1,5 @@
+import { preparePhoto } from "./preparePhoto";
+
 /** Photo-to-listings seam. A real provider replaces the demo one; the screen does not change. */
 export type MatchEvidence = "product_id" | "visual_only";
 
@@ -24,6 +26,8 @@ export type FitProvider = {
   /** True when the photo leaves this device. Search then requires explicit consent. */
   sendsPhoto: boolean;
   isDemo: boolean;
+  /** When true, listings are unlinked samples and must not be shown as matches. */
+  listingsAreSamples?: boolean;
   find: (photo: File, signal: AbortSignal) => Promise<FitResult>;
 };
 
@@ -115,5 +119,94 @@ export function createDemoProvider(scenario: DemoScenario = "results", delayMs =
         }
         setTimeout(finish, delayMs);
       }),
+  };
+}
+
+export const WORKER_QUOTA_MESSAGE = "The test limit has been reached.";
+export const WORKER_UNSUPPORTED_PHOTO_MESSAGE =
+  "Use a photo of just the clothing or shoes, with no people in it.";
+
+type WorkerIdentified = {
+  category?: string | null;
+  brand?: string | null;
+  model?: string | null;
+  colorway?: string | null;
+  styleCode?: string | null;
+  visibleText?: string[] | null;
+  uncertainties?: string[] | null;
+};
+
+/** Build a short readable line from identify fields only — never invent missing pieces. */
+export function formatWorkerIdentified(fields: WorkerIdentified): string {
+  const brand = typeof fields.brand === "string" && fields.brand.trim() ? fields.brand.trim() : null;
+  const model = typeof fields.model === "string" && fields.model.trim() ? fields.model.trim() : null;
+  if (!brand && !model) return "Couldn't identify the exact item";
+  const parts: string[] = [];
+  if (brand) parts.push(brand);
+  if (model) parts.push(model);
+  let text = parts.join(" ");
+  const colorway =
+    typeof fields.colorway === "string" && fields.colorway.trim() ? fields.colorway.trim() : null;
+  const styleCode =
+    typeof fields.styleCode === "string" && fields.styleCode.trim() ? fields.styleCode.trim() : null;
+  if (colorway) text += ` in ${colorway}`;
+  if (styleCode) text += ` (${styleCode})`;
+  return text;
+}
+
+function mapWorkerError(code: unknown): string {
+  if (code === "quota_exhausted") return WORKER_QUOTA_MESSAGE;
+  if (code === "unsupported_photo") return WORKER_UNSUPPORTED_PHOTO_MESSAGE;
+  return FIND_FAILED_MESSAGE;
+}
+
+/**
+ * Sends a prepared photo to the Cloudflare identify worker.
+ * Listings remain the same unlinked samples — identification only.
+ */
+export function createWorkerProvider(apiUrl: string): FitProvider {
+  const base = apiUrl.replace(/\/$/, "");
+  return {
+    name: "Cloudflare",
+    sendsPhoto: true,
+    isDemo: false,
+    listingsAreSamples: true,
+    find: async (photo, signal) => {
+      const prepared = await preparePhoto(photo);
+      let response: Response;
+      try {
+        response = await fetch(`${base}/api/identify`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "image/jpeg",
+            "X-FitCheck-Consent": "yes",
+          },
+          body: prepared,
+          signal,
+        });
+      } catch {
+        if (signal.aborted) throw new Error(FIND_TIMEOUT_MESSAGE);
+        throw new Error(FIND_FAILED_MESSAGE);
+      }
+
+      let payload: { identified?: WorkerIdentified; code?: string } | null = null;
+      try {
+        payload = (await response.json()) as { identified?: WorkerIdentified; code?: string };
+      } catch {
+        payload = null;
+      }
+
+      if (!response.ok) {
+        throw new Error(mapWorkerError(payload?.code));
+      }
+      if (!payload?.identified || typeof payload.identified !== "object") {
+        throw new Error(FIND_FAILED_MESSAGE);
+      }
+
+      return {
+        identified: formatWorkerIdentified(payload.identified),
+        listings: SAMPLE_LISTINGS,
+      };
+    },
   };
 }
